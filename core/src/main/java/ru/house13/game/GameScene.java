@@ -128,7 +128,9 @@ public final class GameScene implements Scene {
     // ---- титры
     int A;                   // счётчик прокрутки титров (e)
     private String[] introLines;   // j (format(INTRO_STORY))
+    private String introPackStamp;  // пак, из которого собран introLines (ЭТАП 5)
     private String[] endingLines;  // i (format(ENDING))
+    private String endingPackStamp; // пак, из которого собран endingLines (ЭТАП 5)
     private int dA;          // пейджер строк (общий для интро/титров — как b.dA)
     private boolean syntheticDown; // отложенная синтетическая «8» (paint, dp==2)
 
@@ -708,7 +710,7 @@ public final class GameScene implements Scene {
                                 d4 = true;
                                 v = true;
                                 inv.createTool("shouji1.png", 2, 2, 15, 27);
-                                bf = "Ключ!..    Интересно,от чего он?";
+                                bf = Texts.R0_PHONE_KEY_TAKEN;
                                 kFlag = true;
                                 E = 0;
                                 return;
@@ -1210,7 +1212,8 @@ public final class GameScene implements Scene {
         a.fill(batch, 0, 0, 240, 320, 0, 0, 0, 1);
         if (!skipState) {
             // h(): прокрутка истории
-            if (introLines == null) {
+            if (introLines == null || !introPackStamp.equals(Texts.pack())) {
+                introPackStamp = Texts.pack();
                 introLines = TextFmt.format(Texts.INTRO_STORY, Texts.INTRO_WRAP,
                         host.fonts()::stringWidth);
             }
@@ -1612,7 +1615,8 @@ public final class GameScene implements Scene {
 
     /** e() (jieshuh): титры — чёрный экран, текст, js.png. */
     private void renderCredits(SpriteBatch batch, Assets a) {
-        if (endingLines == null) {
+        if (endingLines == null || !endingPackStamp.equals(Texts.pack())) {
+            endingPackStamp = Texts.pack();
             endingLines = TextFmt.format(Texts.ENDING, Texts.ENDING_WRAP,
                     host.fonts()::stringWidth);
         }

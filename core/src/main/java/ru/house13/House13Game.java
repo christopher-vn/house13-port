@@ -110,6 +110,12 @@ public class House13Game implements ApplicationListener, GameHost {
             dumpTick = Integer.getInteger("house13.dump.tick", 0);
         } catch (NumberFormatException ignored) {
         }
+        // ЭТАП 5: стартовый пак текстов (dump-прогоны других изданий).
+        // Не персистится: после перезапуска действует сохранённый выбор.
+        String tp = System.getProperty("house13.textpack");
+        if (tp != null && !tp.isEmpty()) {
+            ru.house13.game.Texts.reload(tp);
+        }
         String s = System.getProperty("house13.script");
         if (s != null && !s.isEmpty()) {
             for (String t : s.split(",")) {

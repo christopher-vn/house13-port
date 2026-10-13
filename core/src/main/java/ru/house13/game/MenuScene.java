@@ -42,9 +42,12 @@ public final class MenuScene implements Scene {
     private int cy;         // isd
     private boolean cyDown; // tur
 
-    // ленивый перенос текстов (как strsToShow == null в оригинале)
+    // ленивый перенос текстов (как strsToShow == null в оригинале);
+    // ЭТАП 5: штамп пака — при смене перевода кэш пересобирается
     private String[] helpLines;
     private String[] aboutLines;
+    private String helpPackStamp;
+    private String aboutPackStamp;
 
     // Геометрия пунктов меню: [пункт] = {srcY полосы, dstY, y указателя}
     private static final int[][] ITEMS = {
@@ -157,6 +160,16 @@ public final class MenuScene implements Scene {
                 dA = 0;
             }
         }
+        // ЭТАП 5: 4/6 на экране настроек — переключение перевода.
+        // В оригинале LEFT/RIGHT на bO==2 не обрабатывались (только 2/8 — звук).
+        if (bO == 2 && (k == J2.LEFT || k == J2.RIGHT)) {
+            String next = Texts.pack().equals(Texts.PACK_VPK)
+                    ? Texts.PACK_AUTH : Texts.PACK_VPK;
+            Texts.reload(next);
+            ru.house13.engine.Settings.put("textpack", next);
+            helpLines = null;   // strsToShow == null в оригинале — пересбор
+            aboutLines = null;
+        }
     }
 
     @Override
@@ -195,9 +208,9 @@ public final class MenuScene implements Scene {
         }
     }
 
-    /** Экран звука (b()): обе строки рисуются heidrawString (белые с тенью —
-     *  setColor(200,200,200) в оригинале перекрывается внутри heidrawString),
-     *  активность показывает только указатель shou. */
+    /** Экран звука (b()) — ЭТАП 5: дополнен группой «Перевод» (дополнение
+     *  порта, в оригиналах отсутствует): выбор пака текстов 4/6, шрифт
+     *  и указатель — как у строк звука. */
     private void renderSound(SpriteBatch batch, Assets a, SoundManager snd) {
         a.fill(batch, 0, 0, 240, 320, 1f / 255f, 1f / 255f, 1f / 255f, 1);
         drawFrame(batch, a);
@@ -210,13 +223,29 @@ public final class MenuScene implements Scene {
         f.drawShadow(batch, Texts.SOUND_OFF, x, Texts.SOUND_OFF_Y);
         int sy = SoundManager.canSound ? Texts.SOUND_ON_Y + 2 : Texts.SOUND_OFF_Y;
         batch.draw(a.region("shou.png"), x + Texts.SOUND_SHOU_DX, sy);
+
+        // ---- группа «Перевод»: заголовок + две строки + shou на активном ----
+        int tw = Math.max(f.stringWidth(Texts.TR_AUTH), f.stringWidth(Texts.TR_VPK));
+        int tx = (240 - tw) / 2;
+        f.draw(batch, Texts.SETTINGS_TR_TITLE, (240 - f.stringWidth(Texts.SETTINGS_TR_TITLE)) / 2,
+                208, 200, 200, 200);
+        boolean auth = Texts.pack().equals(Texts.PACK_AUTH);
+        f.drawShadow(batch, Texts.TR_AUTH, tx, 236, auth ? 255 : 200, auth ? 255 : 200, auth ? 255 : 200);
+        f.drawShadow(batch, Texts.TR_VPK, tx, 266, !auth ? 255 : 200, !auth ? 255 : 200, !auth ? 255 : 200);
+        String active = auth ? Texts.TR_AUTH : Texts.TR_VPK;
+        int ay = auth ? 236 : 266;
+        batch.draw(a.region("shou.png"), tx + f.stringWidth(active) + 8, ay);
+        // серая подсказка управления
+        f.draw(batch, Texts.SETTINGS_HINT,
+                (240 - f.stringWidth(Texts.SETTINGS_HINT)) / 2, 296, 150, 150, 150);
     }
 
-    /** Экран помощи (case()): скролл dA, 11 строк, тень+белый (пейджер for). */
+    /** Экран помощи (case()): скролл dA, 11 строк (CN-издание: 7), тень+белый (пейджер for). */
     private void renderHelp(SpriteBatch batch, Assets a) {
         drawFrame(batch, a);
         Fonts f = host.fonts();
-        if (helpLines == null) {
+        if (helpLines == null || !helpPackStamp.equals(Texts.pack())) {
+            helpPackStamp = Texts.pack();
             helpLines = TextFmt.format(Texts.HELP, Texts.HELP_WRAP, f::stringWidth);
         }
         dA = TextFmt.clampRow(dA, helpLines.length);
@@ -227,7 +256,8 @@ public final class MenuScene implements Scene {
     private void renderAbout(SpriteBatch batch, Assets a) {
         drawFrame(batch, a);
         Fonts f = host.fonts();
-        if (aboutLines == null) {
+        if (aboutLines == null || !aboutPackStamp.equals(Texts.pack())) {
+            aboutPackStamp = Texts.pack();
             aboutLines = TextFmt.format(Texts.ABOUT, Texts.ABOUT_WRAP, f::stringWidth);
         }
         int r = TextFmt.clampRow(0, aboutLines.length);

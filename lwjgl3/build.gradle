@@ -3,8 +3,12 @@ plugins {
 }
 
 java {
+    // См. core/build.gradle: язык 17, компилятор/запуск — JDK 21 (toolchain).
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 dependencies {
@@ -26,7 +30,7 @@ run {
     //   ./gradlew lwjgl3:run -Dhouse13.dump=menu.png -Dhouse13.dump.tick=30
     ['house13.dump', 'house13.dump.tick', 'house13.exp', 'house13.room',
      'house13.start', 'house13.script', 'house13.audio', 'house13.pos',
-     'house13.ending', 'house13.sfx'].each { p ->
+     'house13.ending', 'house13.sfx', 'house13.textpack'].each { p ->
         if (System.getProperty(p) != null) {
             systemProperty p, System.getProperty(p)
         }

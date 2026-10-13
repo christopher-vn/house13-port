@@ -82,6 +82,18 @@ public final class Fonts implements Disposable {
         font.draw(batch, s, x, y + ascent);
     }
 
+    /** ЭТАП 5: как drawShadow, но основной текст заданного цвета 0..255
+     *  (активная/неактивная строка выбора перевода). */
+    public void drawShadow(SpriteBatch batch, String s, int x, int y, int r, int g, int b) {
+        font.setColor(149 / 255f, 147 / 255f, 144 / 255f, 1f);
+        font.draw(batch, s, x + 1, y + ascent);
+        font.draw(batch, s, x - 1, y + ascent);
+        font.draw(batch, s, x, y + ascent + 1);
+        font.draw(batch, s, x, y + ascent - 1);
+        font.setColor(r / 255f, g / 255f, b / 255f, 1f);
+        font.draw(batch, s, x, y + ascent);
+    }
+
     /** Строка, центрированная по ширине (аналог (W-stringWidth)/2 в оригинале). */
     public void drawCentered(SpriteBatch batch, String s, int y, int r, int g, int b) {
         draw(batch, s, (240 - stringWidth(s)) / 2, y, r, g, b);

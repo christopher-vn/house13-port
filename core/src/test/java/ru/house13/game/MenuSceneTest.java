@@ -4,6 +4,7 @@ import com.badlogic.gdx.Input;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import ru.house13.engine.Settings;
 import ru.house13.engine.SoundManager;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -133,5 +134,39 @@ class MenuSceneTest {
         slideIn();
         menu.tick(new int[]{Input.Keys.NUM_5}, new int[0]);
         assertTrue(host.scene instanceof GameScene, "'5' запускает игру как FIRE");
+    }
+
+    @Test
+    void leftRightSwitchesTextPackOnSettingsScreen() {
+        slideIn();
+        menu.tick(new int[]{Input.Keys.DOWN}, new int[0]);   // dV=1
+        menu.tick(new int[]{Input.Keys.DOWN}, new int[0]);   // dV=2 ЗВУК
+        menu.tick(new int[]{Input.Keys.ENTER}, new int[0]); // bO=2
+        assertEquals(2, menu.bO);
+        assertEquals(Texts.PACK_VPK, Texts.pack());
+
+        menu.tick(new int[]{Input.Keys.LEFT}, new int[0]);  // 4 -> авторский
+        assertEquals(Texts.PACK_AUTH, Texts.pack(), "LEFT переключает пак");
+        assertEquals(Texts.PACK_AUTH, Settings.get("textpack", "x"), "выбор сохранён");
+
+        menu.tick(new int[]{Input.Keys.RIGHT}, new int[0]); // 6 -> обратно V.P.K
+        assertEquals(Texts.PACK_VPK, Texts.pack());
+        assertEquals(Texts.PACK_VPK, Settings.get("textpack", "x"));
+
+        // 2/8 по-прежнему переключают звук (оригинальное поведение)
+        menu.tick(new int[]{Input.Keys.UP}, new int[0]);
+        assertFalse(ru.house13.engine.SoundManager.canSound);
+    }
+
+    @Test
+    void leftRightIgnoredOutsideSettingsScreen() {
+        slideIn();
+        menu.tick(new int[]{Input.Keys.LEFT}, new int[0]);  // главное меню
+        assertEquals(Texts.PACK_VPK, Texts.pack(), "в главном меню 4/6 не меняют пак");
+        menu.tick(new int[]{Input.Keys.DOWN}, new int[0]);
+        menu.tick(new int[]{Input.Keys.ENTER}, new int[0]);
+        assertEquals(1, menu.bO);                            // АВТОР
+        menu.tick(new int[]{Input.Keys.LEFT}, new int[0]);
+        assertEquals(Texts.PACK_VPK, Texts.pack(), "на подэкране АВТОР 4/6 не меняют пак");
     }
 }

@@ -152,24 +152,28 @@ public final class Inventory {
         batch.draw(a.region(t.file), t.x, t.y);
     }
 
-    /** Имена предметов: switch(c5[void].case) из j(). */
+    /**
+     * Имена предметов: switch(c5[void].case) из j().
+     * ЭТАП 5: значения в Texts (ITEM_*), переключаются паком перевода;
+     * CN-имена см. ru-auth.json (кубик-ключ, батарейка, ключ с бубенчиком).
+     */
     static String nameOf(int id) {
         switch (id) {
-            case 1:  return "Крюк";
-            case 2:  return "Используйте клавишу \"5\".";
-            case 3:  return "Большой ключ";
-            case 4:  return "Маленький ключ";
-            case 5:  return "Книги";
-            case 6:  return "Крышка";
-            case 7:  return "Хреновина";
-            case 8:  return "Ручка от крышки";
-            case 9:  return "Монета";
-            case 10: return "Зеленый ключ";
-            case 11: return "Молоток";
-            case 12: return "Аккумулятор";
-            case 13: return "Веревка";
-            case 14: return "Золотой ключик";
-            default: return "Пожалуйста, выберите пункты.";
+            case 1:  return Texts.ITEM_1;
+            case 2:  return Texts.ITEM_2;
+            case 3:  return Texts.ITEM_3;
+            case 4:  return Texts.ITEM_4;
+            case 5:  return Texts.ITEM_5;
+            case 6:  return Texts.ITEM_6;
+            case 7:  return Texts.ITEM_7;
+            case 8:  return Texts.ITEM_8;
+            case 9:  return Texts.ITEM_9;
+            case 10: return Texts.ITEM_10;
+            case 11: return Texts.ITEM_11;
+            case 12: return Texts.ITEM_12;
+            case 13: return Texts.ITEM_13;
+            case 14: return Texts.ITEM_14;
+            default: return Texts.ITEM_SELECT_PROMPT;
         }
     }
 

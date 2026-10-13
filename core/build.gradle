@@ -3,8 +3,16 @@ plugins {
 }
 
 java {
+    // Уровень языка 17 (байткод совместим), но компилятор/запуск — JDK 21
+    // через toolchain: сборка не зависит от того, каким JDK запущен демон
+    // Gradle (частая ошибка «invalid source release: 17» / «does not provide
+    // the required capabilities: JAVA_COMPILER», когда JAVA_HOME указывает
+    // на старую Java или JRE). Toolchain сам найдёт JDK 21 в системе.
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 dependencies {

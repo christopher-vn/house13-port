@@ -135,4 +135,20 @@ class InventoryTest {
         assertFalse(inv.usingTool);
         assertTrue(host.sound.isPlaying(2), "wrong.mid (канал 2)");
     }
+
+    @Test
+    void itemNamesFollowTextPack() {
+        inv.createTool("shaizi1.png", 3, 2, 25, 13);   // кубик-ключ/большой ключ
+        inv.createTool("mao1.png", 14, 2, 23, 15);     // ключ с бубенчиком/золотой ключик
+        assertEquals("Большой ключ", Inventory.nameOf(3));
+        assertEquals("Золотой ключик", Inventory.nameOf(14));
+
+        Texts.reload(Texts.PACK_AUTH);
+        assertEquals("Кубик-ключ", Inventory.nameOf(3), "CN: 色子钥匙");
+        assertEquals("Ключ с бубенчиком", Inventory.nameOf(14), "CN: 带有铃铛的钥匙");
+
+        Texts.reload(Texts.PACK_VPK);
+        assertEquals("Большой ключ", Inventory.nameOf(3));
+        assertEquals("Золотой ключик", Inventory.nameOf(14));
+    }
 }
