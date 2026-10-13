@@ -11,7 +11,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import ru.house13.engine.Assets;
 import ru.house13.engine.InputQueue;
 import ru.house13.engine.IntegerScaleViewport;
-import ru.house13.game.SmokeScene;
+import ru.house13.game.RoomScene;
 
 /**
  * Корневой класс порта. Фиксирует архитектуру цикла:
@@ -42,7 +42,7 @@ public class House13Game implements ApplicationListener {
     private SpriteBatch batch;
     private Assets assets;
 
-    private SmokeScene scene;
+    private RoomScene scene;
 
     private float accumulator;
     private long tickCount;
@@ -59,7 +59,7 @@ public class House13Game implements ApplicationListener {
         batch = new SpriteBatch();
         assets = new Assets();
 
-        scene = new SmokeScene(assets);
+        scene = new RoomScene(assets);
 
         Gdx.input.setInputProcessor(input);
     }
@@ -93,19 +93,26 @@ public class House13Game implements ApplicationListener {
                 "fps=" + Gdx.graphics.getFramesPerSecond()
                 + " scale=x" + viewport.getScale()
                 + " ticks=" + tickCount
-                + " window=" + Gdx.graphics.getWidth() + "x" + Gdx.graphics.getHeight());
+                + " window=" + Gdx.graphics.getWidth() + "x" + Gdx.graphics.getHeight()
+                + " scene=" + scene);
         }
 
-        // 4) Опциональный дамп framebuffer (CI/песочница): -Dhouse13.dump=true
-        //    сохраняет первый отрисованный кадр в stage1_smoke.png (рабочая директория)
-        if (!dumped && Boolean.getBoolean("house13.dump")) {
+        // 4) Опциональный дамп framebuffer (CI/песочница): -Dhouse13.dump=<имя.png>
+        //    («true» -> frame_dump.png). Сохраняет первый отрисованный кадр.
+        if (!dumped && System.getProperty("house13.dump") != null) {
             dumped = true;
+            String name = System.getProperty("house13.dump");
+            if ("true".equals(name)) {
+                name = "frame_dump.png";
+            }
             try {
                 Pixmap pm = ScreenUtils.getFrameBufferPixmap(0, 0,
                     Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-                FileHandle out = Gdx.files.local("stage1_smoke.png");
-                PixmapIO.writePNG(out, pm);
+                Pixmap fixed = flipRows(pm); // glReadPixels: снизу-вверх -> PNG как на экране
                 pm.dispose();
+                FileHandle out = Gdx.files.local(name);
+                PixmapIO.writePNG(out, fixed);
+                fixed.dispose();
                 Gdx.app.log("House13", "dump -> " + out.file().getAbsolutePath());
             } catch (Exception e) {
                 Gdx.app.error("House13", "dump failed", e);
@@ -123,8 +130,26 @@ public class House13Game implements ApplicationListener {
         // На этапе 3: startApp()
     }
 
+    /** Отразить Pixmap по строкам (низ<->верх): glReadPixels отдаёт кадр снизу-вверх. */
+    private static Pixmap flipRows(Pixmap src) {
+        int w = src.getWidth(), h = src.getHeight();
+        int stride = w * 4;
+        Pixmap dst = new Pixmap(w, h, Pixmap.Format.RGBA8888);
+        java.nio.ByteBuffer s = src.getPixels();
+        java.nio.ByteBuffer d = dst.getPixels();
+        for (int y = 0; y < h; y++) {
+            s.position((h - 1 - y) * stride);
+            s.limit(s.position() + stride);
+            d.position(y * stride);
+            d.put(s);
+        }
+        s.limit(s.capacity());
+        return dst;
+    }
+
     @Override
     public void dispose() {
+        scene.dispose();
         batch.dispose();
         assets.dispose();
     }

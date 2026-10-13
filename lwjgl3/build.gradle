@@ -21,9 +21,11 @@ application {
 run {
     // Рабочая директория = корень проекта (не обязательна, т.к. ассеты в classpath)
     workingDir = rootProject.file('.')
-    // Проброс системного свойства запуска gradle в JVM игры (CI/песочница):
-    //   ./gradlew lwjgl3:run -Dhouse13.dump=true
-    if (System.getProperty('house13.dump') != null) {
-        systemProperty 'house13.dump', System.getProperty('house13.dump')
+    // Проброс отладочных свойств запуска gradle в JVM игры (CI/песочница):
+    //   ./gradlew lwjgl3:run -Dhouse13.dump=true -Dhouse13.exp=B
+    ['house13.dump', 'house13.exp', 'house13.room'].each { p ->
+        if (System.getProperty(p) != null) {
+            systemProperty p, System.getProperty(p)
+        }
     }
 }
