@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+MicroEdition-Configuration: CLDC-1.0
+MIDlet-Name: House N13
+MIDlet-Icon: /icon.png
+MIDlet-Vendor: Vendor
+MIDlet-1: House N13, /icon.png, TheMIDlet
+MIDlet-Version: 1.0
+MicroEdition-Profile: MIDP-2.0
+MIDlet-Description: SE_K700

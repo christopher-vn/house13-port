@@ -1,0 +1,28 @@
+# Сборочные артефакты
+build/
+build-*/
+out/
+[Cc]ache/
+obj/
+bin/
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.apk
+*.aab
+
+# Системное
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# IDE
+.vscode/
+.idea/
+*.iml
+.vs/
+compile_commands.json
