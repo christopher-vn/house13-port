@@ -1,0 +1,137 @@
+package ru.house13.game;
+
+import com.badlogic.gdx.Input;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import ru.house13.engine.SoundManager;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+/** Главное меню: слайд-гейт ввода, навигация 0..4, подэкраны, старт, выход. */
+class MenuSceneTest {
+
+    private FakeHost host;
+    private MenuScene menu;
+
+    @BeforeEach
+    void setUp() {
+        host = new FakeHost();
+        menu = new MenuScene(host);
+    }
+
+    @AfterEach
+    void resetCanSound() {
+        SoundManager.canSound = true;
+    }
+
+    /** Прокрутить анимацию входа до готовности ввода (23 тика, как в l()). */
+    private void slideIn() {
+        for (int i = 0; i < 25; i++) {
+            menu.tick(new int[0], new int[0]);
+        }
+        assertTrue(menu.cv, "слайд-анимация должна завершиться (dO=208, cv=true)");
+    }
+
+    @Test
+    void inputGatedUntilShouSlidesIn() {
+        // char() работает только при cv (shoud) — до того нажатия игнорируются
+        menu.tick(new int[]{Input.Keys.DOWN}, new int[0]); // 1-й тик — анимация
+        assertEquals(0, menu.dV, "ввод до завершения слайда игнорируется");
+        slideIn();
+        menu.tick(new int[]{Input.Keys.DOWN}, new int[0]);
+        assertEquals(1, menu.dV);
+    }
+
+    @Test
+    void navigationWraps5Items() {
+        slideIn();
+        for (int i = 0; i < 5; i++) {
+            menu.tick(new int[]{Input.Keys.DOWN}, new int[0]);
+        }
+        assertEquals(0, menu.dV, "5 нажатий вниз = полный круг");
+        menu.tick(new int[]{Input.Keys.UP}, new int[0]);
+        assertEquals(4, menu.dV, "вверх от 0 -> 4");
+    }
+
+    @Test
+    void selectStartsGame() {
+        slideIn();
+        menu.tick(new int[]{Input.Keys.ENTER}, new int[0]); // FIRE = выбор
+        assertTrue(host.scene instanceof GameScene, "ИГРА -> GameScene");
+    }
+
+    @Test
+    void selectFiveOpensSoundScreenAndToggles() {
+        slideIn();
+        menu.tick(new int[]{Input.Keys.DOWN}, new int[0]); // dV=1
+        menu.tick(new int[]{Input.Keys.DOWN}, new int[0]); // dV=2 (ЗВУК)
+        menu.tick(new int[]{Input.Keys.ENTER}, new int[0]);
+        assertEquals(2, menu.bO, "ЗВУК -> menuStatus_ 2");
+
+        // в экране звука вверх/вниз переключают canSound
+        assertTrue(SoundManager.canSound);
+        menu.tick(new int[]{Input.Keys.UP}, new int[0]);
+        assertFalse(SoundManager.canSound);
+
+        // FIRE из экрана звука возвращает в главное меню (второй блок char())
+        menu.tick(new int[]{Input.Keys.ENTER}, new int[0]);
+        assertEquals(0, menu.bO);
+    }
+
+    @Test
+    void selectAuthorAndHelpSubscreensAndBack() {
+        slideIn();
+        // АВТОР (dV=1)
+        menu.tick(new int[]{Input.Keys.DOWN}, new int[0]);
+        menu.tick(new int[]{Input.Keys.ENTER}, new int[0]);
+        assertEquals(1, menu.bO);
+        menu.tick(new int[]{Input.Keys.ENTER}, new int[0]); // FIRE = назад
+        assertEquals(0, menu.bO);
+
+        // ИНФО/ПОМОЩЬ (dV=3; после АВТОРА dV=1 — навигация не сбрасывается,
+        // currentKeyCode сохраняется между подэкранами, как в оригинале)
+        menu.tick(new int[]{Input.Keys.DOWN}, new int[0]); // dV=2
+        menu.tick(new int[]{Input.Keys.DOWN}, new int[0]); // dV=3
+        menu.tick(new int[]{Input.Keys.ENTER}, new int[0]);
+        assertEquals(3, menu.bO);
+        // в помощи вверх/вниз скроллят (dA), пункт не меняется
+        menu.tick(new int[]{Input.Keys.DOWN}, new int[0]);
+        menu.tick(new int[]{Input.Keys.DOWN}, new int[0]);
+        assertEquals(3, menu.bO);
+        assertEquals(2, menu.dA);
+        menu.tick(new int[]{Input.Keys.ENTER}, new int[0]);
+        assertEquals(0, menu.bO);
+        assertEquals(0, menu.dA, "выход из помощи сбрасывает скролл");
+    }
+
+    @Test
+    void rightSoftKeyExitsSubscreens() {
+        slideIn();
+        menu.tick(new int[]{Input.Keys.DOWN}, new int[0]); // dV=1 АВТОР
+        menu.tick(new int[]{Input.Keys.ENTER}, new int[0]);
+        assertEquals(1, menu.bO);
+        menu.tick(new int[]{Input.Keys.ESCAPE}, new int[0]); // правый софт = назад
+        assertEquals(0, menu.bO);
+    }
+
+    @Test
+    void selectExitQuitsApp() {
+        slideIn();
+        for (int i = 0; i < 4; i++) {
+            menu.tick(new int[]{Input.Keys.DOWN}, new int[0]); // dV=4 ВЫХОД
+        }
+        assertEquals(4, menu.dV);
+        menu.tick(new int[]{Input.Keys.ENTER}, new int[0]);
+        assertTrue(host.exit, "ВЫХОД -> quitApp");
+        assertNull(host.scene, "сцена не меняется");
+    }
+
+    @Test
+    void digit5SelectsLikeFire() {
+        // '5' = 53 входит в оба условия выбора (bc||cJ||53)
+        slideIn();
+        menu.tick(new int[]{Input.Keys.NUM_5}, new int[0]);
+        assertTrue(host.scene instanceof GameScene, "'5' запускает игру как FIRE");
+    }
+}

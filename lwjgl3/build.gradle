@@ -12,6 +12,7 @@ dependencies {
 
     implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
     implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+    runtimeOnly "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
 }
 
 application {
@@ -22,8 +23,9 @@ run {
     // Рабочая директория = корень проекта (не обязательна, т.к. ассеты в classpath)
     workingDir = rootProject.file('.')
     // Проброс отладочных свойств запуска gradle в JVM игры (CI/песочница):
-    //   ./gradlew lwjgl3:run -Dhouse13.dump=true -Dhouse13.exp=B
-    ['house13.dump', 'house13.exp', 'house13.room'].each { p ->
+    //   ./gradlew lwjgl3:run -Dhouse13.dump=menu.png -Dhouse13.dump.tick=30
+    ['house13.dump', 'house13.dump.tick', 'house13.exp', 'house13.room',
+     'house13.start', 'house13.script', 'house13.audio'].each { p ->
         if (System.getProperty(p) != null) {
             systemProperty p, System.getProperty(p)
         }

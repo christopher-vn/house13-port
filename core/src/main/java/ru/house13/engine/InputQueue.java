@@ -36,6 +36,16 @@ public final class InputQueue implements InputProcessor {
 
     private static final int[] EMPTY = new int[0];
 
+    /** Синтетическое нажатие (скрипт автотеста -Dhouse13.script): до drain текущего тика. */
+    public void injectDown(int keycode) {
+        downs.add(keycode);
+    }
+
+    /** Синтетическое отпускание (скрипт автотеста). */
+    public void injectUp(int keycode) {
+        ups.add(keycode);
+    }
+
     @Override
     public boolean keyDown(int keycode) {
         downs.add(keycode);
@@ -48,7 +58,7 @@ public final class InputQueue implements InputProcessor {
         return false;
     }
 
-    // Ниже — не используется на этапе 1 (тач — этап 6, мышь — не нужна).
+    // Ниже — не используется (тач — этап 6, мышь — не нужна).
 
     @Override
     public boolean keyTyped(char character) {

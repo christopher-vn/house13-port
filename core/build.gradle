@@ -10,6 +10,8 @@ java {
 dependencies {
     // libGDX ядро: графика, ввод, аудио, файлы
     api "com.badlogicgames.gdx:gdx:$gdxVersion"
+    // FreeType: растеризация TTF -> BitmapFont (кириллица; системного шрифта, как в J2ME, нет)
+    api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
 
     testImplementation "org.junit.jupiter:junit-jupiter:$junitVersion"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"

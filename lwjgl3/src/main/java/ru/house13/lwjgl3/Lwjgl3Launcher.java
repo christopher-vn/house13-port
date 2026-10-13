@@ -4,16 +4,22 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import ru.house13.House13Game;
 
-/** Десктоп-запуск (LWJGL3). Окно стартует в x2 (480x640), масштаб пересчитывается на resize. */
+/**
+ * Десктоп-запуск (LWJGL3). Окно стартует в x2 (480x640), масштаб
+ * пересчитывается на resize. Свойства house13.* пробрасываются gradle
+ * (см. lwjgl3/build.gradle): start/script/dump/dump.tick/room/audio.
+ */
 public final class Lwjgl3Launcher {
 
     public static void main(String[] args) {
         Lwjgl3ApplicationConfiguration cfg = new Lwjgl3ApplicationConfiguration();
-        cfg.setTitle("Дом №13 — 三更灵异事件 (port, stage 1)");
+        cfg.setTitle("Дом №13 — 三更灵异事件 (порт)");
         cfg.setWindowedMode(480, 640);
         cfg.setResizable(true);
         cfg.useVsync(true);
         cfg.setIdleFPS(0); // с vsync рендер по кадровой частоте монитора
+        // headless-прогоны (Xvfb без аудио): -Dhouse13.audio=false
+        cfg.disableAudio("false".equals(System.getProperty("house13.audio", "true")));
         new Lwjgl3Application(new House13Game(), cfg);
     }
 }
