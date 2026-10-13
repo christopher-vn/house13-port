@@ -1,3 +1,7 @@
+# Gradle
+.gradle/
+/tools/
+
 # Сборочные артефакты
 build/
 build-*/

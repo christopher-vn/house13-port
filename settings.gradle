@@ -1,0 +1,3 @@
+rootProject.name = 'house13-port'
+
+include ':core', ':lwjgl3'

@@ -1,0 +1,7 @@
+// Корневой build-файл: общие репозитории; настройки модулей — в их собственных build.gradle
+
+allprojects {
+    repositories {
+        mavenCentral()
+    }
+}

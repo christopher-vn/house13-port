@@ -127,3 +127,24 @@ Stage Summary:
 - Архитектура порта переключена на Java+libGDX (решение пользователя), отражено в README и дорожной карте.
 - Пользователю выданы команды пререндера MIDI→OGG (fluidsynth + его SF2); .sf2 в репо не входит.
 - Следующий шаг: каркас libGDX (этап 1) — core+lwjgl3, IntegerScaleViewport, 10 Гц; параллельно этап 0 (пререндер аудио на стороне пользователя).
+
+---
+Task ID: 7-stage1
+Agent: main (Super Z)
+Task: Этап 1 дорожной карты — каркас libGDX (core+lwjgl3, IntegerScaleViewport, фиксированный шаг 10 Гц, загрузка RU-ассетов, smoke-сцена), сборка и верификация.
+
+Work Log:
+- Окружение: libGDX 1.14.2 (latest maven), Gradle 8.14.3 (dist в tools/, gitignored), JDK: системный — JRE без javac → Temurin 21.0.12 в tools/. Wrapper сгенерирован (gradlew + gradle/wrapper).
+- Структура: settings.gradle, root build.gradle (mavenCentral), core (java-library, assets/ через sourceSets → ассеты в корне core.jar → Gdx.files.internal работает и подготовит Android-этап), lwjgl3 (application + backend-lwjgl3 + natives-desktop), assets/ = back1.png + hand.png (RU), .gitignore += .gradle/, /tools/.
+- Код: engine/IntegerScaleViewport (целый масштаб >=1, центрирование, scaleFor — чистая функция для тестов; apply только при Gdx.gl != null для юнит-тестов), engine/InputQueue (J2ME-событийная семантика: накопление downs/ups между тиками, drain на тике), engine/Assets (ObjectMap кэш, Nearest), House13Game (аккумулятор STEP=0.1с, MAX_FRAME_DELTA=0.25с защита от лагспайков, камера Y-вниз как J2ME, лог-пульс раз в 120 кадров, опция -Dhouse13.dump — дамп framebuffer в PNG через ScreenUtils+PixmapIO), game/SmokeScene (back1 240×320 + рука: кадры 21×30 из hand.png x=0/21/42 y=0 — данные из b.java k()/handIni; движение 5px/тик по стрелкам/2/4/6/8, clamp), lwjgl3/Lwjgl3Launcher (окно 480×640, vsync, resaize пересчитывает масштаб).
+- Данные руки уточнены из декомпиляции: лист 64×118, рабочие кадры 3 (x=0/21/42, y=0, 21×30); слот framesInfo[3]={63,0,21,30} за краем листа, не показывается (в RU 4 «слота», анимация гоняет 0..2).
+- Исправления по ходу (API 1.14): Disposable → com.badlogic.gdx.utils; ScreenUtils → utils (не glutils); getFrameBufferPixmap(int,int,int,int) (bool-варианта нет); Viewport.getWorldWidth/Height теперь float — убрал int-дубли.
+- Тесты: IntegerScaleViewportTest — 5 тестов (240×320→x1, 480×640→x2, 1000×700→x2 полями (260,30), 1080×2340→x4, малое окно→x1; update центрирует). 5/5 зелёные.
+- Прогон под Xvfb (960×1280, окно 480×640): лог fps≈608 (vsync в виртуальном дисплее нет), ticks строго 10 Гц (451→472 за 50с), scale=x2; дамп stage1_smoke.png 480×640 RGBA.
+- Пиксельная верификация (scripts/verify_stage1_dump.py): вне руки 0/76397, рука с учётом альфы (227 прозрачных пикселей силуэта) 0/630 — VERIFIED. Конвейер ассеты→nearest→IntegerScaleViewport→blit математически точен.
+- README: раздел «Сборка и запуск», этап 1 в roadmap отмечен готовым; stage1_smoke.png → download/ (артефакт проверки, в репо не входит).
+
+Stage Summary:
+- Этап 1 ЗАВЕРШЁН и верифицирован: каркас libGDX собирается, 5/5 тестов, 10 Гц точные, рендер совпадает с оригинальными ассетами попиксельно.
+- Команда запуска у пользователя: ./gradlew lwjgl3:run (или -Dhouse13.dump=true для дампа кадра).
+- Следующий шаг: этап 2 «первый свет» — портирование коллизий: перенос f() (18 массивов стен cI..cT) и p() (шаг→тест→откат) из RU b.java, переходы между комнатами по edge-walk; либо этап 3 (машина состояний) — по выбору пользователя.

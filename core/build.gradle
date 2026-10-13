@@ -1,0 +1,31 @@
+plugins {
+    id 'java-library'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+dependencies {
+    // libGDX ядро: графика, ввод, аудио, файлы
+    api "com.badlogicgames.gdx:gdx:$gdxVersion"
+
+    testImplementation "org.junit.jupiter:junit-jupiter:$junitVersion"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+// Игровые ассеты лежат в корне проекта (assets/) и попадают в core.jar,
+// поэтому Gdx.files.internal("back1.png") работает на десктопе (classpath);
+// на этапе 6 Android-модуль подключит ту же папку через sourceSets.
+sourceSets {
+    main {
+        resources {
+            srcDirs = ['src/main/resources', rootProject.file('assets')]
+        }
+    }
+}
