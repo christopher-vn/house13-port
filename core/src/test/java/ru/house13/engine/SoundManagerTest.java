@@ -8,7 +8,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Порт MySound-каналов: create/play/closed/change + canSound + громкость 0.7. */
+/** Порт MySound-каналов: create/play/closed/change + canSound + громкость 0.7.
+ *  Этап 4: каналы 1-3 (get/wrong/correct) — реставрированы (one-shot). */
 class SoundManagerTest {
 
     private final List<FakeMusic> created = new ArrayList<>();
@@ -38,16 +39,60 @@ class SoundManagerTest {
     }
 
     @Test
-    void absentTracksAreSilentlyIgnored() {
-        // get/wrong/correct MIDI нет в JAR оригинала — каналы молча отсутствуют
+    void sfxChannelsAreOneShotNotLooped() {
+        // реставрация этапа 4: get/wrong/correct существуют и НЕ зациклены
         SoundManager sm = newManager();
         sm.createBackMid(SoundManager.CH_GET);
         sm.createBackMid(SoundManager.CH_WRONG);
         sm.createBackMid(SoundManager.CH_CORRECT);
         sm.playBackMid(SoundManager.CH_GET);
+        sm.playBackMid(SoundManager.CH_WRONG);
         sm.playBackMid(SoundManager.CH_CORRECT);
+        assertTrue(sm.isPlaying(SoundManager.CH_GET));
+        assertTrue(sm.isPlaying(SoundManager.CH_WRONG));
+        assertTrue(sm.isPlaying(SoundManager.CH_CORRECT));
+        assertFalse(created.get(0).looping, "one-shot эффекты не зацикливаются");
+        assertFalse(created.get(2).looping);
+        assertEquals(0.7f, created.get(0).volume, 1e-6);
+    }
+
+    @Test
+    void conveniencePlayGetWrongCorrect() {
+        SoundManager sm = newManager();
+        sm.playGet();
+        sm.playWrong();
+        sm.playCorrect();
+        assertTrue(sm.isPlaying(SoundManager.CH_GET));
+        assertTrue(sm.isPlaying(SoundManager.CH_WRONG));
+        assertTrue(sm.isPlaying(SoundManager.CH_CORRECT));
+        // повторный вызов при играющем — no-op (MMAPI start())
+        FakeMusic get = created.get(0);
+        sm.playGet();
+        assertEquals(1, get.playCount);
+    }
+
+    @Test
+    void oneShotRestartsFromBeginningAfterFinish() {
+        // доигравший one-shot перезапускается с нуля (setPosition(0) + play)
+        SoundManager sm = newManager();
+        sm.playGet();
+        FakeMusic get = created.get(0);
+        get.playing = false;          // «дориграл» (FakeMusic не тикает сам)
+        sm.playGet();
+        assertEquals(2, get.playCount, "повторная находка — звук с начала");
+    }
+
+    @Test
+    void cascadeCutDisposesSfxChannels() {
+        // каскад byte() гасит каналы 1-3 при каждом нажатии — как в оригинале
+        SoundManager sm = newManager();
+        sm.playGet();
+        sm.changeClosedMid(SoundManager.CH_GET);
         assertFalse(sm.isPlaying(SoundManager.CH_GET));
-        assertTrue(created.isEmpty(), "фабрика не вызывалась для отсутствующих треков");
+        assertTrue(created.get(0).disposed);
+        // следующий вызов создаёт заново
+        sm.playWrong();
+        assertTrue(sm.isPlaying(SoundManager.CH_WRONG));
     }
 
     @Test

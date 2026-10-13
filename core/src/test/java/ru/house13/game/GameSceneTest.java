@@ -17,7 +17,7 @@ class GameSceneTest {
     @BeforeEach
     void setUp() {
         host = new FakeHost();
-        game = new GameScene(host);
+        game = GameScene.postSkip(host);
     }
 
     @AfterEach

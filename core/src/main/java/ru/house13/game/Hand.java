@@ -39,6 +39,16 @@ public final class Hand {
     public boolean blocked;  // r (qingchu): движение в стену
     public boolean moving;   // флаги ac/bn/Z/c9: идёт анимация ходьбы
 
+    // Флаги направления RU (b.dQ/c/b/b3 = pshang/pxia/pzuo/pyou):
+    // устанавливаются нажатием (case(int) — свой флаг true, остальные false),
+    // сбрасываются отпусканием (keyReleased). Читаются хот-зонами try(int)
+    // и ховер-подсказками u(): «рука давит на объект в этом направлении».
+    public boolean dirUp, dirDown, dirLeft, dirRight;
+
+    /** c.try (видимость спрайта): гасится титрами e() и НЕ восстанавливается
+     *  — оригинальный баг (рука невидима после концовки до перезапуска). */
+    public boolean visible = true;
+
     public Hand(int j, int i) {
         this.j = j;
         this.i = i;
@@ -91,12 +101,16 @@ public final class Hand {
         }
     }
 
-    /** keyReleased: скорость 0, кадр 0, анимация стоп (b.keyReleased case 2). */
+    /** keyReleased: скорость 0, кадр 0, анимация стоп, флаги направлений вниз. */
     public void release() {
         dx = 0;
         dy = 0;
         frame = 0;
         moving = false;
         blocked = false;
+        dirUp = false;
+        dirDown = false;
+        dirLeft = false;
+        dirRight = false;
     }
 }

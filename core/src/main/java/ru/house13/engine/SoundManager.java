@@ -10,14 +10,25 @@ import com.badlogic.gdx.utils.Disposable;
  *
  * Каналы (индексы как в оригинале):
  *   0 = menu.mid  -> audio/menu.ogg   (menu, logo_Back/bR)
- *   1 = get.mid   -> файла нет в JAR, молча отсутствует (как в оригинале)
- *   2 = wrong.mid -> файла нет в JAR
- *   3 = correct.mid -> файла нет в JAR
+ *   1 = get.mid    -> audio/get.ogg     (get_M/cC — подбор предмета)
+ *   2 = wrong.mid  -> audio/wrong.ogg   (wrong_M/bx — «Неправильное использование!»)
+ *   3 = correct.mid-> audio/correct.ogg (correct_M/eg — пазл решён)
  *   4 = mapbg.mid -> audio/mapbg.ogg  (jieshu_Back)
  *
+ * ЭТАП 4, РЕСТАВРАЦИЯ ЗВУКА: в оригинале файлы get/wrong/correct.mid
+ * отсутствовали в JAR (проверено md5-сверкой всех трёх билдов), а вызовы
+ * playBackMid(1..3) не были подключены — каналы только останавливались
+ * каскадом keyPressed (changeClosedMid(1),(2),(3) — эти вызовы в коде ЕСТЬ).
+ * Мы сочинили три джингла в стиле игры (assets/audio/midi/*.mid —
+ * музыкальная шкатулка/безладовый бас/синт-струны из её же MIDI-файлов)
+ * и подключили их в семантических точках (CreateTool, «Неправильное
+ * использование!», успехи пазлов). Выключается: -Dhouse13.sfx=false.
+ *
  * Громкость 0.7 — порт VolumeControl.setLevel(70) из MySound.createSound().
- * Зацикливание: оригинал вызывал player.start() каждый кадр (перезапуск на
- * конце дорожки); здесь эквивалент Music.setLooping(true).
+ * Каналы 0/4 зациклены (оригинал вызывал player.start() каждый кадр =
+ * перезапуск на конце дорожки); каналы 1-3 — one-shot, при повторном
+ * playBackMid звук начинается с начала (MMAPI start() на доигравшем
+ * плеере перезапускал бы его с нуля на свежесозданном плеере).
  *
  * Фабрика Music внедряется для юнит-тестов (без Gdx.audio).
  */
@@ -28,10 +39,17 @@ public final class SoundManager implements Disposable {
     /** MySound.canSound — общий выключатель (статический, как в оригинале). */
     public static boolean canSound = true;
 
-    /** Имена файлов каналов; null = дорожки нет в JAR (каналы 1-3). */
+    /** Реставрация SFX get/wrong/correct (этап 4); -Dhouse13.sfx=false отключает. */
+    public static final boolean SFX_RESTORED =
+        !"false".equalsIgnoreCase(System.getProperty("house13.sfx", "true"));
+
+    /** Имена файлов каналов. */
     private static final String[] TRACKS = {
-        "menu.ogg", null, null, null, "mapbg.ogg"
+        "menu.ogg", "get.ogg", "wrong.ogg", "correct.ogg", "mapbg.ogg"
     };
+
+    /** Зацикливание: фоновые каналы 0/4 — да, one-shot 1/3 — нет. */
+    private static final boolean[] LOOPING = {true, false, false, false, true};
 
     private static final float VOLUME = 0.7f; // VolumeControl.setLevel(70)
 
@@ -70,7 +88,7 @@ public final class SoundManager implements Disposable {
                 dead[i] = true;
                 return;
             }
-            m.setLooping(true);
+            m.setLooping(LOOPING[i]);
             m.setVolume(VOLUME);
             channels[i] = m;
         } catch (Exception e) {
@@ -79,10 +97,41 @@ public final class SoundManager implements Disposable {
         }
     }
 
-    /** playBackMid(i): играть, если звук включён. Повторный вызов — no-op. */
+    /**
+     * playBackMid(i): играть, если звук включён. Повторный вызов для уже
+     * играющего канала — no-op (MMAPI start() на запущенном плеере).
+     * One-shot каналы (1-3) при доигранном состоянии стартуют с начала.
+     */
     public void playBackMid(int i) {
         if (canSound && channels[i] != null && !channels[i].isPlaying()) {
+            if (!LOOPING[i]) {
+                channels[i].setPosition(0); // перезапуск one-shot с начала
+            }
             channels[i].play();
+        }
+    }
+
+    /** Событие «предмет получен» — канал get (реставрация этапа 4). */
+    public void playGet() {
+        if (SFX_RESTORED) {
+            createBackMid(CH_GET);
+            playBackMid(CH_GET);
+        }
+    }
+
+    /** Событие «неверное использование» — канал wrong (реставрация этапа 4). */
+    public void playWrong() {
+        if (SFX_RESTORED) {
+            createBackMid(CH_WRONG);
+            playBackMid(CH_WRONG);
+        }
+    }
+
+    /** Событие «пазл решён» — канал correct (реставрация этапа 4). */
+    public void playCorrect() {
+        if (SFX_RESTORED) {
+            createBackMid(CH_CORRECT);
+            playBackMid(CH_CORRECT);
         }
     }
 

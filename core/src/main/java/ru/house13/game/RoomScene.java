@@ -6,29 +6,32 @@ import ru.house13.engine.Assets;
 import ru.house13.engine.KeyMap.J2;
 
 /**
- * Комнаты и рука-курсор (этап 2). Порт связки RU: case()/long()/p()/a().
+ * Комнаты и рука-курсор (этап 2; этап 4 — разделение рендера). Порт связки
+ * RU: case()/long()/p()/a().
  *
- * С этапа 3 сцена — часть GameScene: ввод приходит через handleKey()
- * (после каскада паузы byte()), физика — в tick() (аналог void():
- * long() выполняется только когда пауза/инструмент не открыты).
+ * Рендер разделён на два вызова (порядок оригинала в else()/w()/void()):
+ *   renderBackground — фон комнаты (a()/publicRoom1);
+ *   renderHand — спрайт руки (long(): a8.a(cO)) поверх объектов/стрелок/сейфа.
+ * Объекты комнат (u()), фронтальные полосы (null()), стрелки (q()), карта
+ * (dmap), жалюзи и сейф рисуются GameScene между этими двумя вызовами.
  *
  * Тик: 1) edge-walk по ТЕКУЩЕЙ позиции (12 правил, гейт !usingTool);
  * 2) p()-валидация (блокировка -> скорость 0) + a() применение (5 px);
  * 3) анимация ходьбы (пинг-понг, при блокировке кадр 0).
  *
  * Ввод (J2ME-семантика): нажатие направления при !held устанавливает
- * скорость и ряд спрайта; ЛЮБОЕ keyReleased сбрасывает движение
- * (keyReleased RU case 2 — без фильтра клавиши).
+ * скорость, ряд спрайта и флаг направления; ЛЮБОЕ keyReleased сбрасывает
+ * движение. Возвращает true, если нажатие принято (case(int) при !d6) —
+ * по этому сигналу GameScene гасит usingTool и диалог k (как оригинал).
  *
  * Отладка (только десктоп, в оригинале нет):
- *   PgUp/PgDn — переключение комнат; F10 — оверлей стен + хитбокс.
+ *   PgUp/PgDn — переключение комнат; F10 — оверлей стен + хитбокса.
  */
 public final class RoomScene {
 
     public int room;                 // b.ce (offsetX): 0..17
     public final Hand hand;
     private boolean held;            // b.d6
-    private boolean usingTool;       // b.cP — гейт edge-walk/движения (этап 4)
 
     private final Assets assets;
     private boolean showWalls;       // F10
@@ -37,7 +40,8 @@ public final class RoomScene {
         this.assets = assets;
         // Старт игры: комната 0 (спальня), позиция из handIni (RU k()):
         // j = (240-21)/2 + 40 = 149, i = 320-80 = 240, направление «вниз».
-        // Отладка: -Dhouse13.room=N — старт в комнате N (рука — в свободной точке).
+        // Отладка: -Dhouse13.room=N — старт в комнате N (рука — в свободной
+        // точке); -Dhouse13.pos=j,i — точная позиция руки (дампы хот-зонов).
         this.room = 0;
         Hand start = new Hand(149, 240);
         String dbg = System.getProperty("house13.room");
@@ -50,33 +54,45 @@ public final class RoomScene {
             } catch (NumberFormatException ignored) {
             }
         }
+        String pos = System.getProperty("house13.pos");
+        if (pos != null) {
+            try {
+                String[] xy = pos.split(",");
+                start = new Hand(Integer.parseInt(xy[0]), Integer.parseInt(xy[1]));
+            } catch (Exception ignored) {
+            }
+        }
         this.hand = start;
     }
 
-    /** Нажатие клавиши (keyPressed RU case(int) при !d6). Вызывает GameScene. */
-    public void handleKey(J2 k) {
+    /**
+     * Нажатие клавиши (keyPressed RU case(int) при !d6). Возвращает true,
+     * если нажатие направления принято. Гейты !try (сейф) и c6 (стрелки
+     * обучения) проверяет GameScene ДО вызова.
+     */
+    public boolean handleKey(J2 k) {
         if (held) {
-            return; // !d6
+            return false; // !d6
         }
         switch (k) {
             case LEFT:
             case NUM_4:
                 pressDirection(0);
-                break;
+                return true;
             case RIGHT:
             case NUM_6:
                 pressDirection(1);
-                break;
+                return true;
             case UP:
             case NUM_2:
                 pressDirection(2);
-                break;
+                return true;
             case DOWN:
             case NUM_8:
                 pressDirection(3);
-                break;
+                return true;
             default:
-                break;
+                return false;
         }
     }
 
@@ -103,14 +119,11 @@ public final class RoomScene {
         hand.release();
     }
 
-    /** Физический тик (void()/long()): переходы + движение + анимация. */
-    public void tick() {
-        if (usingTool) {
-            return; // гейт cP
-        }
-        // 1) edge-walk по текущей позиции
+    /** Физический тик (long()): переходы + движение + анимация. */
+    public void tick(boolean usingTool) {
+        // 1) edge-walk по текущей позиции (гейт !cP в каждом правиле)
         EdgeRules.Rule rule = EdgeRules.match(room, hand.j, hand.i);
-        if (rule != null) {
+        if (rule != null && !usingTool) {
             room = EdgeRules.apply(rule, hand);
             return;        // long(): переход отрабатывает за такт, без движения
         }
@@ -127,6 +140,11 @@ public final class RoomScene {
         hand.blocked = false;
         hand.moving = true;
         hand.frame = 0;
+        // флаги направления (dQ/c/b/b3): свой true, остальные false
+        hand.dirUp = side == 2;
+        hand.dirDown = side == 3;
+        hand.dirLeft = side == 0;
+        hand.dirRight = side == 1;
         switch (side) {
             case 0: hand.setDirectionLeft();  hand.dx = -5; hand.dy = 0; break; // '4'
             case 1: hand.setDirectionRight(); hand.dx = 5;  hand.dy = 0; break; // '6'
@@ -134,6 +152,9 @@ public final class RoomScene {
             case 3: hand.setDirectionDown();  hand.dx = 0;  hand.dy = 5;  break; // '8'
             default:
         }
+        // Мёртвые записи оригинала (case()): S=2 в ком.2, ed=2 в ком.6
+        // (никогда не читаются), d3=true в ком.13 при dl — читается хот-зоном,
+        // переносится GameScene при принятии нажатия.
     }
 
     /** Отладочный телепорт между комнатами (PgUp/PgDn). */
@@ -170,22 +191,26 @@ public final class RoomScene {
         return true;
     }
 
-    /** Рендер комнаты: фон + рука (+ отладочный оверлей F10). */
-    public void render(SpriteBatch batch) {
+    /** Фон комнаты (a()/publicRoom1: drawImage(back, 0, 0)). */
+    public void renderBackground(SpriteBatch batch) {
         String backFile = RoomData.BACKGROUNDS[room] + ".png";
         batch.draw(assets.region(backFile, 0, 0, 240, 320, false, true), 0, 0);
+    }
 
-        // рука: кадр (frame*21, rowY, 21, rowH) в позиции (j, i)
+    /** Рука (long(): a8.a(cO)); c.try=false титров гасит спрайт. */
+    public void renderHand(SpriteBatch batch) {
+        if (!hand.visible) {
+            return;
+        }
         batch.draw(assets.region("hand.png", hand.frame * Hand.FRAME_X_STEP, hand.rowY,
                 Hand.FRAME_W, hand.rowH, false, true), hand.j, hand.i);
-
-        if (showWalls) {
-            drawDebug(batch);
-        }
     }
 
     /** Оверлей: стены (полупрозрачный белый) + хитбокс пальца (красный). */
-    private void drawDebug(SpriteBatch batch) {
+    public void drawDebug(SpriteBatch batch) {
+        if (!showWalls) {
+            return;
+        }
         for (int[] w : RoomData.WALLS[room]) {
             assets.fill(batch, w[0], w[1], w[2], w[3], 1, 1, 1, 0.45f);
         }

@@ -81,6 +81,7 @@ public class House13Game implements ApplicationListener, GameHost {
     // автотест-скрипт
     private final ArrayDeque<String> script = new ArrayDeque<>();
     private int scriptWait;
+    private int scriptHoldKey = -1;   // hold-токен: зажатая клавиша
 
     @Override
     public void create() {
@@ -198,10 +199,18 @@ public class House13Game implements ApplicationListener, GameHost {
     /** Одна клавиша автотеста на текущий тик (нажатие + отпускание). */
     private void injectScript() {
         if (script.isEmpty()) {
+            if (scriptHoldKey >= 0) {          // страховка: отпустить зажатое
+                input.injectUp(scriptHoldKey);
+                scriptHoldKey = -1;
+            }
             return;
         }
         if (scriptWait > 0) {
             scriptWait--;
+            if (scriptWait == 0 && scriptHoldKey >= 0) {
+                input.injectUp(scriptHoldKey);  // hold-токен завершён
+                scriptHoldKey = -1;
+            }
             return;
         }
         String t = script.poll();
@@ -212,6 +221,35 @@ public class House13Game implements ApplicationListener, GameHost {
                 scriptWait = 0;
             }
             return;
+        }
+        // Составные токены этапа 4: UF/DF/LF/RF — направление + FIRE
+        // в одном тике (нажатие направления ставит флаг dQ/c/b/b3, затем
+        // '5' попадает в хот-зоны с уже выставленным направлением)
+        if (t.length() == 2 && t.charAt(1) == 'F') {
+            int dir = scriptKey(t.substring(0, 1));
+            if (dir >= 0) {
+                input.injectDown(dir);
+                input.injectDown(com.badlogic.gdx.Input.Keys.ENTER);
+                input.injectUp(dir);
+                input.injectUp(com.badlogic.gdx.Input.Keys.ENTER);
+                return;
+            }
+        }
+        // Hold-токены этапа 4: u15/d3/l18/r4 — зажать направление на N тиков
+        // (реальная ходьба; блокировка стены останавливает руку раньше)
+        char c0 = t.charAt(0);
+        if (t.length() > 1 && (c0 == 'u' || c0 == 'd' || c0 == 'l' || c0 == 'r')) {
+            try {
+                int hold = Integer.parseInt(t.substring(1));
+                int dir = scriptKey(t.substring(0, 1).toUpperCase());
+                if (dir >= 0 && hold > 0) {
+                    input.injectDown(dir);
+                    scriptHoldKey = dir;
+                    scriptWait = hold - 1;
+                    return;
+                }
+            } catch (NumberFormatException ignored) {
+            }
         }
         int gdx = scriptKey(t);
         if (gdx >= 0) {
