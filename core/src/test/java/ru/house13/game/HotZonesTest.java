@@ -59,7 +59,8 @@ class HotZonesTest {
         assertTrue(game.v);
         assertEquals(0, game.E);
         assertEquals(2, game.inv.slots[0].id, "предмет 2 (ключ) в слоте 0");
-        assertEquals("Ключ!..    Интересно,от чего он?", game.bf);
+        // ЭТАП 5c: bf хранит нормализованный текст (TextFmt.norm)
+        assertEquals("Ключ!.. Интересно, от чего он?", game.bf);
     }
 
     @Test

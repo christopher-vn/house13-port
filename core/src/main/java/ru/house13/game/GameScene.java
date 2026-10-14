@@ -5,6 +5,7 @@ import ru.house13.engine.Assets;
 import ru.house13.engine.Fonts;
 import ru.house13.engine.KeyMap;
 import ru.house13.engine.KeyMap.J2;
+import ru.house13.engine.Settings;
 import ru.house13.engine.SoundManager;
 
 /**
@@ -92,6 +93,7 @@ public final class GameScene implements Scene {
     String m = "";           // toolStringToshow
     boolean kFlag;           // k (guanzi): диалог перекрывает хот-зоны
     int n;                   // shuodi: строка многострочного диалога
+    final DialogBox dialog = new DialogBox(); // бокс порта (этап 5c)
 
     // ---- флаги комнат (try(int)/u()); имена — из RU b.java
     boolean l;               // дверь спальни отперта
@@ -264,6 +266,9 @@ public final class GameScene implements Scene {
             arrowsFrame();             // q(): счётчик bU
         }
         hoverHints();                  // u(): ховер-подсказки (ком.0/14)
+        if (!bf.isEmpty()) {
+            dialog.tick();             // этап 5c: печатная машинка
+        }
         if (inv.aQ[15] == 10) {
             creditsFrame();            // e()
         }
@@ -443,6 +448,16 @@ public final class GameScene implements Scene {
         if (k == null) {
             return;                    // стрелка съедена курсором клавиатуры
         }
+        // ЭТАП 5c: подтверждение в «настоящем» диалоге (kFlag, msg()) —
+        // домотать печатную машинку / перевернуть страницу и СЪЕСТЬ нажатие.
+        // Ховер-подсказки и монолог пробуждения (kFlag=false) сохраняют
+        // семантику оригинала: любая клавиша чистит bf, каскад продолжается.
+        if (kFlag && !bf.isEmpty() && !safe.open && !pause && !info
+                && !musicOverlay && !inv.showTool
+                && (k == J2.FIRE || k == J2.NUM_5 || k == J2.SOFT_RIGHT)
+                && dialog.confirm()) {
+            return;
+        }
         // 1) FIRE -> '5' (без оверлеев; byte 949)
         if (k == J2.FIRE && !pause && !info && !musicOverlay) {
             k = J2.NUM_5;
@@ -513,6 +528,9 @@ public final class GameScene implements Scene {
             }
             bf = "";
             m = "";
+            if (kFlag && !dialog.shownText().isEmpty()) {
+                dialog.clear();        // бокс закрыт вместе с bf
+            }
             host.sound().changeClosedMid(SoundManager.CH_GET);
             host.sound().changeClosedMid(SoundManager.CH_CORRECT);
             // инвентарь ИЛИ игра (byte 1058)
@@ -1219,8 +1237,7 @@ public final class GameScene implements Scene {
         }
         // окна сообщений (else() 2647-2672; гейт !aR)
         if (!bf.isEmpty() && !pause) {
-            a.fill(batch, 0, 270, 240, 66, 0, 0, 0, 1);
-            drawStringToScreen(batch, a, bf);
+            dialogBoxRender(batch, a);
         }
         if (!m.isEmpty() && !pause) {
             a.fill(batch, 0, 270, 240, 51, 0, 0, 0, 1);
@@ -1318,34 +1335,51 @@ public final class GameScene implements Scene {
         // @formatter:on
     }
 
-    /** do(String) (drawstringToScreen): 2 видимые строки + мигающая anja. */
-    private void drawStringToScreen(SpriteBatch batch, Assets a, String text) {
+    /** do(String) (drawstringToScreen) — ЭТАП 5c: бокс порта с рамкой,
+     *  переносом по словам, страницами по 2 строки и печатной машинкой.
+     *  Геометрия строк и цвет (250,223,134) — как в оригинале. */
+    private void dialogBoxRender(SpriteBatch batch, Assets a) {
         Fonts f = host.fonts();
-        int di = f.height();
-        int limit = 240 - 2 * f.stringWidth("В");
-        String[] l1 = splitLine(text, limit, f);
-        String[] l2 = splitLine(l1[1], limit, f);
-        f.draw(batch, l1[0], f.stringWidth("В") - 4 - 3, 275, 250, 223, 134);
-        f.draw(batch, l2[0], f.stringWidth("В") - 4 - 3, 320 - di - 4, 250, 223, 134);
+        if (!bf.equals(dialog.shownText())) {
+            dialog.setSpeed(textSpeedTicks());
+            dialog.show(bf, 240 - 2 * f.stringWidth("В"), f::stringWidth);
+        }
+        a.fill(batch, 0, 268, 240, 52, 0, 0, 0, 1);
+        drawBoxFrame(batch, a, 1, 269, 238, 50);
+        int x = f.stringWidth("В") - 4 - 3;
+        f.draw(batch, dialog.line(0), x, 275, 250, 223, 134);
+        f.draw(batch, dialog.line(1), x, 320 - f.height() - 4, 250, 223, 134);
         int y = host.tick() % 2 == 0 ? 309 : 308;   // Timer e % 2
         batch.draw(a.region("anja.png"), 228, y);
     }
 
-    /** Деление строки по ширине; переполняющий символ ОСТАЁТСЯ в строке
-     *  (семантика do(String), отличается от format()/TextFmt). */
-    private static String[] splitLine(String s, int limit, Fonts f) {
-        if (s == null || s.isEmpty()) {
-            return new String[]{"", ""};
+    /** Двойная пиксельная рамка бокса (этап 5c): верх/лево — светлый
+     *  песочный в цвет текста, низ/право — тёмный, углы срезаны на 2px. */
+    private static void drawBoxFrame(SpriteBatch batch, Assets a,
+                                     int x, int y, int w, int h) {
+        a.fill(batch, x + 2, y, w - 4, 1, 250, 223, 134, 1);
+        a.fill(batch, x, y + 2, 1, h - 4, 250, 223, 134, 1);
+        a.fill(batch, x + 2, y + h - 1, w - 4, 1, 166, 140, 84, 1);
+        a.fill(batch, x + w - 1, y + 2, 1, h - 4, 166, 140, 84, 1);
+        a.fill(batch, x + 1, y + 1, 1, 1, 208, 181, 109, 1);
+        a.fill(batch, x + w - 2, y + 1, 1, 1, 208, 181, 109, 1);
+        a.fill(batch, x + 1, y + h - 2, 1, 1, 208, 181, 109, 1);
+        a.fill(batch, x + w - 2, y + h - 2, 1, 1, 208, 181, 109, 1);
+    }
+
+    /** Скорость печатной машинки из настроек: тиков на символ (0 = мгновенно). */
+    private static int textSpeedTicks() {
+        String v = Settings.get("textspeed", "normal");
+        switch (v) {
+            case "instant":
+                return 0;
+            case "fast":
+                return 1;
+            case "slow":
+                return 4;
+            default:
+                return 2;
         }
-        int i = 0;
-        while (i < s.length()) {
-            if (f.stringWidth(s.substring(0, i + 1)) > limit
-                    || i >= s.length() - 1 || s.charAt(i) == '\n') {
-                return new String[]{s.substring(0, i + 1), s.substring(i + 1)};
-            }
-            i++;
-        }
-        return new String[]{s, ""};
     }
 
     /** u() (fangjian): объекты комнат. */

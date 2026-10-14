@@ -108,6 +108,37 @@ class TextsTest {
         assertTrue(Texts.INTRO_STORY.contains("сестра"));
     }
 
+    /** ЭТАП 5c: рантайм-нормализация типографики V.P.K (JSON хранит сырьё). */
+    @Test
+    void reloadAppliesTypographyNormalization() {
+        Texts.reload(Texts.PACK_VPK);
+        // мульти-пробелы сжаты («Ключ!..    Интересно» со скриншота бага)
+        assertEquals("Ключ!.. Интересно, от чего он?", Texts.R0_PHONE_KEY_TAKEN);
+        assertTrue(Texts.R0_PHONE_KEY_HOVER.startsWith("-Ух, ты! Ключ!.. Чтобы получить"));
+        // слитная пунктуация разделена
+        assertTrue(Texts.INTRO_STORY.contains("рынок. Вчера"));
+        assertTrue(Texts.WAKEUP_0.contains("-Где я?.. Ох, как"));
+        // ведущие пробелы центровки HELP сохранены
+        assertTrue(Texts.HELP.startsWith("          ПОМОЩЬ"));
+        // ни одного поля с внутренними мульти-пробелами
+        for (Map.Entry<String, Object> e : Texts.snapshot().entrySet()) {
+            if (e.getValue() instanceof String) {
+                String s = (String) e.getValue();
+                assertFalse(s.matches("(?s).*\\S  +\\S.*"),
+                        e.getKey() + " содержит мульти-пробел: " + s);
+            }
+        }
+    }
+
+    /** ЭТАП 5c: нормализация не ломает авторский пак (он уже аккуратен). */
+    @Test
+    void authPackSurvivesNormalization() {
+        Texts.reload(Texts.PACK_AUTH);
+        assertEquals("Нашла ключ.", Texts.R0_PHONE_KEY_TAKEN);
+        assertEquals("9819?", Texts.R13_WARDROBE_0);
+        assertTrue(Texts.INTRO_STORY.contains("сестра"));
+    }
+
     /** Map.equals не видит содержимое массивов — сравниваем поля вручную. */
     private static void assertSnapshotsEqual(Map<String, Object> expected,
                                              Map<String, Object> actual, String msg) {

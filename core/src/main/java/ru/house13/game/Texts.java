@@ -45,7 +45,7 @@ public final class Texts {
      *  Блок УПРАВЛЕНИЕ обновлён под раскладку порта (этап 5b: стрелки/
      *  Enter/Space/Z/X/Esc/Shift); дословная строка V.P.K — в git-истории. */
     public static String HELP =
-        "          ПОМОЩЬ \n Перед  вами  классичес  кая игра/квест о загадочном приключении девуш ки Шизуко в чужом  странном доме.Помогите бедняжке с честью избавить  ся от кошмаров и ужасов злоключений."
+        "          ПОМОЩЬ \n Перед вами классическая игра/квест о загадочном приключении девушки Шизуко в чужом странном доме.Помогите бедняжке с честью избавиться от кошмаров и ужасов злоключений."
         + "\n        УПРАВЛЕНИЕ \n"
         + "Стрелки - перемещение по дому \n"
         + "Enter/\"Space\" - выбор действия \n"
@@ -159,7 +159,7 @@ public final class Texts {
     public static String R0_PHONE_HOVER = "-Интересно,что в шкафу?..Чтобы открыть,нажми Enter";
     public static String R0_PHONE_KEY_HOVER = "-Ух,ты!Ключ!.. Чтобы         получить,нажми Enter";
     public static String R0_BOTTOM_DOOR = "Дверь закрыта... ";
-    public static String R1_SAFE_KEY = "-Хм...Еще один ключ...Пожалуй возьму, пригодится";
+    public static String R1_SAFE_KEY = "-Хм...Еще один ключ...Пожалуй, возьму, пригодится";
     public static String R5_DOOR_0 = "-Закрыто...Тихо! По-моему там кто-то есть... ";
     public static String R5_DOOR_1 = "Я четко слышала шорох...Ой,   мне страшно!..";
     public static String R3_NEED_KEY = "-Упс...Дверь закрыта...Нужен ключ";
@@ -168,7 +168,7 @@ public final class Texts {
     public static String R7_NO_HANDLE_1 = "Нужна ручка.Любая.Дверная,от крышки,коробки";
     public static String R10_GREEN_KEY = "-А вот еще один ключ...Кто их тут оставил?";
     public static String R8_WATCHED = "Дверь закрыта...-По-моему за мной наблюдают";
-    public static String R17_VOICE = "Тот же голос: -Ты всеравно отсюда не выйдешь!";
+    public static String R17_VOICE = "Тот же голос: -Ты все равно отсюда не выйдешь!";
     public static String R16_ANGRY = "Сердитый  голос: -Хватит ломать дом, дура!!!";
     public static String R16_ROPE = "-Господи,мыло и веревка!.Лучше возьму веревку";
     public static String R9_BOOKS_TAKEN = "-А вот и книги!..\"Анатомия человеческого тела\"...";
@@ -177,7 +177,7 @@ public final class Texts {
     public static String R12_COIN = "-Какая большая и красивая монета!..Возьму себе";
     public static String R13_WARDROBE_0 = "-Фу-у!..Ну и запах в этом шкафу!";
     public static String R13_WARDROBE_1 = "-Какие-то цифры...Что бы это значило?...";
-    public static String R13_LID = "Найдена крышка от какого- то предмета...";
+    public static String R13_LID = "Найдена крышка от какого-то предмета...";
     public static String R14_BATTERY = "В тайнике дома вы обнаружили аккумулятор";
     public static String R14_MAP_HOVER = "-Какая-то карта... Ничего     не понимаю...";
     public static String R3_BIG_KEY_FITS = "Большой ключ подошел... Дверь открылась";
@@ -185,7 +185,7 @@ public final class Texts {
     public static String R16_ROPE_ON_BEAM = "Снова голос: -Будешь вешаться - возьми мыло!..";
     public static String R5_GREEN_KEY_FITS = "Так вот откуда зеленый ключ.Дверь открылась";
     public static String R8_SWAP_HAMMER = "Классно я придумала заменить молоток хренью!";
-    public static String R14_HAMMER_WALL = "Ого!..Сильна малышка!Так и дом развалить можно";
+    public static String R14_HAMMER_WALL = "Ого!..Сильна, малышка!Так и дом развалить можно";
     public static String R6_SMALL_KEY_FITS = "Дверь со скрипом открылась";
     public static String R7_HANDLE_FITS = "Вы приделали ручку,и потянули дверь на себя...";
     public static String R11_LID_FITS = "-Ловко я сообразила!..И снова секреты...";
@@ -252,6 +252,9 @@ public final class Texts {
     /**
      * Переключить пак: сброс к вшитым значениям VPK, затем наложение
      * text/<packId>.json. Незнакомый packId = только вшитые значения.
+     * ЭТАП 5c: поверх применяется типографская нормализация TextFmt.norm()
+     * (мульти-пробелы и слитные знаки препинания V.P.K) — JSON-паки хранят
+     * дословный исторический текст, движок отображает его аккуратно.
      */
     public static void reload(String packId) {
         if (packId == null || packId.isEmpty()) {
@@ -263,6 +266,7 @@ public final class Texts {
             applyAll(overlay);
         }
         pack = packId;
+        normalizeFields();
     }
 
     /** Снимок ТЕКУЩИХ значений (для тестов и отладки). */
@@ -296,6 +300,28 @@ public final class Texts {
                     f.setInt(null, ((Number) v).intValue());
                 } else if (t == String[].class) {
                     f.set(null, toStringArray(v));
+                }
+            }
+        } catch (IllegalAccessException never) {
+            throw new IllegalStateException(never);
+        }
+    }
+
+    /** ЭТАП 5c: нормализовать строковые поля на месте (массивы — копией,
+     * чтобы DEFAULTS не мутировали). */
+    private static void normalizeFields() {
+        try {
+            for (Field f : textFields()) {
+                Class<?> t = f.getType();
+                if (t == String.class) {
+                    f.set(null, TextFmt.norm((String) f.get(null)));
+                } else if (t == String[].class) {
+                    String[] src = (String[]) f.get(null);
+                    String[] cp = new String[src.length];
+                    for (int i = 0; i < src.length; i++) {
+                        cp[i] = TextFmt.norm(src[i]);
+                    }
+                    f.set(null, cp);
                 }
             }
         } catch (IllegalAccessException never) {

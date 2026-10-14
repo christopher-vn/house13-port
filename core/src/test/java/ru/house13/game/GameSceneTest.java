@@ -126,6 +126,75 @@ class GameSceneTest {
         assertEquals(startY - 15, hand.i, "3 тика по 5px (1 тик занял press)");
     }
 
+    // ==================================================================
+    // ЭТАП 5c: диалоговый бокс (typewriter + страницы)
+    // ==================================================================
+
+    /** Диалог без показа (headless, render не звался) — поведение оригинала:
+     *  первая же клавиша чистит bf, каскад продолжается. */
+    @Test
+    void dialogAnyKeyClosesItWhenNotShown() {
+        game.bf = "Ключ!.. Интересно, от чего он?";
+        game.kFlag = true;
+        game.tick(new int[]{Input.Keys.ENTER}, new int[0]);
+        assertTrue(game.bf.isEmpty(), "бокс закрыт — как в оригинале");
+        assertFalse(game.pause);
+    }
+
+    /** Двухстраничный диалог: первый Enter переворачивает страницу
+     *  (нажатие съедено), второй — закрывает бокс через каскад. */
+    @Test
+    void dialogConfirmPagesThroughLongText() {
+        game.bf = "aaa bbb ccc ddd eee fff";
+        game.kFlag = true;
+        // render в headless не звался — кормим бокс, как сделал бы dialogBoxRender
+        game.dialog.setSpeed(0);
+        game.dialog.show(game.bf, 42, s -> s.length() * 6); // «aaa bbb»=42px
+        game.tick(new int[]{Input.Keys.ENTER}, new int[0]);
+        assertFalse(game.bf.isEmpty(), "первая страница — Enter листает, не закрывает");
+        assertTrue(game.dialog.pageShown());
+        game.tick(new int[]{Input.Keys.ENTER}, new int[0]);
+        assertTrue(game.bf.isEmpty(), "последняя страница — Enter закрывает");
+    }
+
+    /** Печатная машинка: первое подтверждение доматывает текст,
+     *  второе закрывает одностраничный бокс. */
+    @Test
+    void dialogConfirmFirstCompletesTyping() {
+        game.bf = "aaa bbb";
+        game.kFlag = true;
+        game.dialog.setSpeed(2);
+        game.dialog.show(game.bf, 1000, s -> s.length() * 6);
+        game.tick(new int[]{Input.Keys.ENTER}, new int[0]);
+        assertFalse(game.bf.isEmpty(), "Enter домотал машинку, бокс жив");
+        assertTrue(game.dialog.pageShown());
+        game.tick(new int[]{Input.Keys.ENTER}, new int[0]);
+        assertTrue(game.bf.isEmpty());
+    }
+
+    /** Ховер-подсказки (kFlag=false) не перехватывают ввод — как в оригинале. */
+    @Test
+    void hoverDialogFallsThroughLikeOriginal() {
+        game.bf = "-Интересно, что в шкафу?..";
+        game.kFlag = false;
+        game.dialog.setSpeed(2);
+        game.dialog.show(game.bf, 1000, s -> s.length() * 6);
+        game.tick(new int[]{Input.Keys.ENTER}, new int[0]);
+        assertTrue(game.bf.isEmpty(), "ховер не блокирует клавиши");
+    }
+
+    /** Машинка продвигается в тике кадра (frame -> dialog.tick). */
+    @Test
+    void dialogTypewriterAdvancesInFrame() {
+        game.bf = "aaa bbb";
+        game.dialog.setSpeed(2);
+        game.dialog.show(game.bf, 1000, s -> s.length() * 6);
+        game.tick(new int[0], new int[0]);
+        assertEquals("", game.dialog.line(0), "1 тик — печати ещё нет");
+        game.tick(new int[0], new int[0]);
+        assertEquals("a", game.dialog.line(0), "2 тика — первый символ");
+    }
+
     private void openPause() {
         game.tick(new int[]{Input.Keys.ESCAPE}, new int[0]);
         assertTrue(game.pause, "пауза должна открыться");
