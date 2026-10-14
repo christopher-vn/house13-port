@@ -165,7 +165,7 @@ class GameSceneTest {
     void dialogConfirmFirstCompletesTyping() {
         game.bf = "aaa bbb";
         game.kFlag = true;
-        game.dialog.setSpeed(2);
+        game.dialog.setSpeed(10);
         game.dialog.show(game.bf, 1000, s -> s.length() * 6);
         game.tick(new int[]{Input.Keys.ENTER}, new int[0]);
         assertFalse(game.bf.isEmpty(), "Enter домотал машинку, бокс жив");
@@ -179,36 +179,49 @@ class GameSceneTest {
     void hoverDialogFallsThroughLikeOriginal() {
         game.bf = "-Интересно, что в шкафу?..";
         game.kFlag = false;
-        game.dialog.setSpeed(2);
+        game.dialog.setSpeed(10);
         game.dialog.show(game.bf, 1000, s -> s.length() * 6);
         game.tick(new int[]{Input.Keys.ENTER}, new int[0]);
         assertTrue(game.bf.isEmpty(), "ховер не блокирует клавиши");
     }
 
-    /** Машинка продвигается в тике кадра (frame -> dialog.tick). */
+    /** Машинка продвигается в тике кадра (frame -> dialog.tick).
+     *  5d: «обычно» = 10 десятых симв/тик — символ в первом же тике. */
     @Test
     void dialogTypewriterAdvancesInFrame() {
         game.bf = "aaa bbb";
-        game.dialog.setSpeed(2);
+        game.dialog.setSpeed(10);
         game.dialog.show(game.bf, 1000, s -> s.length() * 6);
         game.tick(new int[0], new int[0]);
-        assertEquals("", game.dialog.line(0), "1 тик — печати ещё нет");
+        assertEquals("a", game.dialog.line(0), "1 тик — первый символ (10 симв/с)");
+        game.dialog.setSpeed(5);              // «медленно»: 0.5 симв/тик
         game.tick(new int[0], new int[0]);
-        assertEquals("a", game.dialog.line(0), "2 тика — первый символ");
+        assertEquals("a", game.dialog.line(0), "нечётный тик — без символа");
+        game.tick(new int[0], new int[0]);
+        assertEquals("aa", game.dialog.line(0), "чётный тик — символ");
     }
 
     @Test
     void shadowThemePlaysInDarkWingRooms() {
-        // этап 5c: «Тени» в комнатах 5-8 и 16-17, mapbg — в остальном доме
-        assertEquals(SoundManager.CH_MAPBG, GameScene.roomTrack(0));
-        assertEquals(SoundManager.CH_MAPBG, GameScene.roomTrack(1));
-        assertEquals(SoundManager.CH_MAPBG, GameScene.roomTrack(13));
+        // этап 5c: «Тени» в комнатах 5-8 и 16-17
         assertEquals(SoundManager.CH_MAPBG2, GameScene.roomTrack(5), "там кто-то есть");
         assertEquals(SoundManager.CH_MAPBG2, GameScene.roomTrack(6), "повеяло холодом");
         assertEquals(SoundManager.CH_MAPBG2, GameScene.roomTrack(7), "нет ручки");
         assertEquals(SoundManager.CH_MAPBG2, GameScene.roomTrack(8), "за мной наблюдают");
         assertEquals(SoundManager.CH_MAPBG2, GameScene.roomTrack(16), "сердитый голос");
         assertEquals(SoundManager.CH_MAPBG2, GameScene.roomTrack(17), "ты не выйдешь");
+    }
+
+    @Test
+    void clockworkThemePlaysInPuzzleWingRooms() {
+        // этап 5d: «Шкатулка» — крыло головоломок 9-15 (библиотека, туалет,
+        // кладовые, шкаф, карта, машина), mapbg — стартовые комнаты 0-4
+        assertEquals(SoundManager.CH_MAPBG, GameScene.roomTrack(0), "спальня");
+        assertEquals(SoundManager.CH_MAPBG, GameScene.roomTrack(1), "сейф");
+        assertEquals(SoundManager.CH_MAPBG, GameScene.roomTrack(4), "коридор");
+        for (int r = 9; r <= 15; r++) {
+            assertEquals(SoundManager.CH_MAPBG3, GameScene.roomTrack(r), "комната " + r);
+        }
     }
 
     private void openPause() {

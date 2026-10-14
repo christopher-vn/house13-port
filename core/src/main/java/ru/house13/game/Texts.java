@@ -227,7 +227,7 @@ public final class Texts {
     /** Пункт «Назад». */
     public static String SET_BACK = "Назад";
     /** Серая подсказка внизу экрана настроек. */
-    public static String SETTINGS_HINT = "Вверх/вниз - пункт, влево/вправо - выбор";
+    public static String SETTINGS_HINT = "Вверх/вниз - пункт, Enter - назад";
     /** Заголовок группы перевода (строка пункта «Перевод: <пак>»). */
     public static String SETTINGS_TR_TITLE = "Перевод:";
     /** Значение пункта перевода: авторский перевод с китайского. */

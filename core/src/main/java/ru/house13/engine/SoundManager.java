@@ -18,6 +18,11 @@ import com.badlogic.gdx.utils.Disposable;
  *      «там кто-то есть/холод/нет ручки/наблюдают» и 16-17 «голоса»;
  *      сочинена в языке mapbg — спа́рсные колокола на квинте D-A с тритоном
  *      Ab, исходник midi/mapbg2.mid + генератор scripts/make_shadow_theme.py)
+ *   6 = mapbg3.ogg (этап 5d — «Шкатулка», тема крыла головоломок:
+ *      комнаты 9-15 — библиотека, туалет, кладовые, шкаф, карта, машина.
+ *      Самостоятельная пьеса — ля-минорный вальс музыкальной шкатулки
+ *      (тик-так, арпеджио, контрапункт), без родства с mapbg;
+ *      исходник midi/mapbg3.mid + генератор scripts/make_clock_theme.py)
  *
  * ЭТАП 4, РЕСТАВРАЦИЯ ЗВУКА: в оригинале файлы get/wrong/correct.mid
  * отсутствовали в JAR (проверено md5-сверкой всех трёх билдов), а вызовы
@@ -39,7 +44,7 @@ import com.badlogic.gdx.utils.Disposable;
 public final class SoundManager implements Disposable {
 
     public static final int CH_MENU = 0, CH_GET = 1, CH_WRONG = 2, CH_CORRECT = 3,
-            CH_MAPBG = 4, CH_MAPBG2 = 5;
+            CH_MAPBG = 4, CH_MAPBG2 = 5, CH_MAPBG3 = 6;
 
     /** MySound.canSound — общий выключатель (статический, как в оригинале). */
     public static boolean canSound = true;
@@ -50,11 +55,12 @@ public final class SoundManager implements Disposable {
 
     /** Имена файлов каналов. */
     private static final String[] TRACKS = {
-        "menu.ogg", "get.ogg", "wrong.ogg", "correct.ogg", "mapbg.ogg", "mapbg2.ogg"
+        "menu.ogg", "get.ogg", "wrong.ogg", "correct.ogg",
+        "mapbg.ogg", "mapbg2.ogg", "mapbg3.ogg"
     };
 
-    /** Зацикливание: фоновые каналы 0/4/5 — да, one-shot 1/3 — нет. */
-    private static final boolean[] LOOPING = {true, false, false, false, true, true};
+    /** Зацикливание: фоновые каналы 0/4/5/6 — да, one-shot 1/3 — нет. */
+    private static final boolean[] LOOPING = {true, false, false, false, true, true, true};
 
     private static final float VOLUME = 0.7f; // VolumeControl.setLevel(70)
 

@@ -119,7 +119,7 @@
   "ITEM_SELECT_PROMPT": "Выберите предмет.",
   "TR_AUTH": "Авторский",
   "TR_VPK": "Локализаторский",
-  "SETTINGS_HINT": "Вверх/вниз - пункт, влево/вправо - выбор",
+  "SETTINGS_HINT": "Вверх/вниз - пункт, Enter - назад",
   "SETTINGS_TR_TITLE": "Перевод:",
   "SETTINGS_TITLE": "НАСТРОЙКИ",
   "SET_TEXT": "Текст",

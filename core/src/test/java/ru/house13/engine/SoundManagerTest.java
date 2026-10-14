@@ -177,4 +177,16 @@ class SoundManagerTest {
         assertTrue(m.looping, "mapbg2 — фоновая тема, луп как у mapbg");
         assertEquals(0.7f, m.volume, 1e-6);
     }
+
+    @Test
+    void clockworkThemeChannelIsLoopedBackground() {
+        // этап 5d: «Шкатулка» (mapbg3.ogg) — фоновый зацикленный канал 6
+        SoundManager sm = newManager();
+        sm.createBackMid(SoundManager.CH_MAPBG3);
+        sm.playBackMid(SoundManager.CH_MAPBG3);
+        assertTrue(sm.isPlaying(SoundManager.CH_MAPBG3));
+        FakeMusic m = created.get(0);
+        assertTrue(m.looping, "mapbg3 — фоновая тема, луп как у mapbg");
+        assertEquals(0.7f, m.volume, 1e-6);
+    }
 }

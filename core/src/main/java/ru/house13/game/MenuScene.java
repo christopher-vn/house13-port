@@ -229,7 +229,9 @@ public final class MenuScene implements Scene {
     /** Пейджер for(String[],...): rowCountToDraw строк от r, шаг getHeight()+2. */
     private void drawPage(SpriteBatch batch, Fonts f, String[] lines, int r,
                           int left, int top, int rows) {
-        int step = f.height() + 2; // rowair = 2
+        // 5d: LINE_STEP (сетка 12px + 2px) вместо lineHeight FreeType (~18):
+        // rowair=2 оригинала считался от системного шрифта K700 (fH+2 ≈ 14-16)
+        int step = ru.house13.engine.Fonts.LINE_STEP + 2;
         for (int i = 0; i < rows && i + r < lines.length; i++) {
             f.drawShadow(batch, lines[i + r], left, top + i * step);
         }

@@ -31,6 +31,20 @@ public final class Fonts implements Disposable {
     /** Размер пиксельной сетки Fusion Pixel (дизайн-размер шрифта). */
     public static final int SMALL_SIZE = 12;
 
+    /**
+     * ЭТАП 5d: шаг строк для набора текста — сетка 12px + 2px воздуха.
+     * lineHeight сгенерированного шрифта (ascent 13 + descent 3, с гэпом
+     * FreeType до ~18) раздут для плотной пиксельной вёрстки: экранные
+     * формулы оригинала (fH+1, fH+2, HEIGHT-fH-4) считались от системного
+     * шрифта K700 (fH около 12-14). LINE_STEP подставляется в эти формулы
+     * вместо height().
+     */
+    public static final int LINE_STEP = 14;
+
+    /** Чернильная высота глифов (сетка 12px):caps y+4..y+12, выносные
+     *  элементы до y+15 — для формул «высота строки» как fH оригинала. */
+    public static final int INK_HEIGHT = 12;
+
     /** Кириллица + типографские знаки сверх ASCII (DEFAULT_CHARS). */
     private static final String CYRILLIC =
         "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"

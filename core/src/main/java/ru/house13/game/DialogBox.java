@@ -13,9 +13,18 @@ import java.util.List;
  * страничным и полностью допечатанным — поведение handleKey остаётся
  * ровно как в оригинале (первая же клавиша чистит bf).
  *
- * Скорость печатания: charsPerTick = 0 — мгновенно (как в оригинале),
- * 1 — 60 симв/с, 0.5 — 30 симв/с (normal), 0.25 — 15 симв/с (slow).
- * Реализовано аккумулятором: каждые T тиков +1 символ.
+ * Скорость печатной машинки (этап 5d) — в ДЕСЯТЫХ ДОЛЯХ символа за тик
+ * (тик игры = 0.1 c, аккумулятор сглаживает дробность):
+ *   0  — мгновенно (как в оригинале);
+ *   20 — 2 симв/тик = 20 симв/с (быстро);
+ *   10 — 1 симв/тик = 10 симв/с (обычно; в 5c было 2 тика/символ =
+ *        5 симв/с — «прям медленно», ускорено вдвое);
+ *   5  — 0.5 симв/тик = 5 симв/с (медленно).
+ *
+ * Анимация (5d): пока страница печатается, рендер показывает каретку
+ * за печатной головкой (typingRow) и подсвечивает свежий символ
+ * (sinceTyped — тиков с последнего символа); когда страница допечатана,
+ * вместо каретки мигает anja-самоцвет (GameScene).
  */
 final class DialogBox {
 
@@ -26,17 +35,19 @@ final class DialogBox {
     private int page;
     /** Напечатано символов на текущей странице (обе строки суммарно). */
     private int typed;
-    /** Аккумулятор тиков typewriter. */
-    private int acc;
-    /** Символов за тик X/TPD: 0 = мгновенно. */
-    private int ticksPerChar;
+    /** Аккумулятор дробной скорости: десятые долей символа. */
+    private int acc10;
+    /** Скорость: десятых символа за тик; 0 = мгновенно. */
+    private int speed;
+    /** Тиков с последнего напечатанного символа (подсветка «чернил»). */
+    private int sinceTyped;
     /** Полная длина страницы (для сравнения с typed). */
     private int pageLen;
 
-    /** Настроить скорость: 0 = мгновенно, 1/2/4 = тиков на символ. */
-    void setSpeed(int ticksPerChar) {
-        this.ticksPerChar = Math.max(0, ticksPerChar);
-        if (this.ticksPerChar == 0) {
+    /** Настроить скорость: десятых символа за тик; 0 = мгновенно. */
+    void setSpeed(int tenthsPerTick) {
+        this.speed = Math.max(0, tenthsPerTick);
+        if (speed == 0) {
             typed = pageLen;
         }
     }
@@ -59,9 +70,10 @@ final class DialogBox {
         }
         pages = p.toArray(new String[0][]);
         page = 0;
-        acc = 0;
+        acc10 = 0;
+        sinceTyped = 0;
         pageLen = pages[0][0].length() + pages[0][1].length();
-        typed = ticksPerChar == 0 ? pageLen : 0;
+        typed = speed == 0 ? pageLen : 0;
     }
 
     /** Сброс (bf очищен) — бокс снова «невидимый» с пассивным поведением. */
@@ -71,18 +83,21 @@ final class DialogBox {
         page = 0;
         typed = 0;
         pageLen = 0;
-        acc = 0;
+        acc10 = 0;
+        sinceTyped = 0;
     }
 
-    /** Печатная машинка: +1 символ каждые ticksPerChar тиков. */
+    /** Печатная машинка: acc10 += speed, каждые 10 десятых — символ. */
     void tick() {
-        if (typed >= pageLen || ticksPerChar == 0) {
+        if (typed >= pageLen || speed == 0) {
             return;
         }
-        acc++;
-        if (acc >= ticksPerChar) {
-            acc = 0;
+        sinceTyped++;
+        acc10 += speed;
+        while (acc10 >= 10 && typed < pageLen) {
+            acc10 -= 10;
             typed++;
+            sinceTyped = 0;
         }
     }
 
@@ -98,9 +113,10 @@ final class DialogBox {
         }
         if (page < pages.length - 1) {
             page++;
-            acc = 0;
+            acc10 = 0;
+            sinceTyped = 0;
             pageLen = pages[page][0].length() + pages[page][1].length();
-            typed = ticksPerChar == 0 ? pageLen : 0;
+            typed = speed == 0 ? pageLen : 0;
             return true;
         }
         return false;
@@ -119,6 +135,20 @@ final class DialogBox {
     /** Есть ли страницы после текущей. */
     boolean hasMorePages() {
         return page < pages.length - 1;
+    }
+
+    /** Строка, на которой стоит печатная головка (0/1); -1 — не печатает.
+     *  Ровно на ней каретка и «свежие чернила» рендера. */
+    int typingRow() {
+        if (typed >= pageLen) {
+            return -1;
+        }
+        return typed < pages[page][0].length() ? 0 : 1;
+    }
+
+    /** Тиков с последнего напечатанного символа (для подсветки «чернил»). */
+    int sinceTyped() {
+        return sinceTyped;
     }
 
     /** Видимая строка row (0/1) с учётом печатной машинки. */

@@ -5,8 +5,9 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * ЭТАП 5c. Диалоговый бокс: перенос по словам (страницы по 2 строки),
- * печатная машинка, подтверждение (домотать/листнуть/пропустить).
+ * ЭТАП 5c/5d. Диалоговый бокс: перенос по словам (страницы по 2 строки),
+ * печатная машинка (скорость — десятые доли символа за тик), анимация
+ * (typingRow/sinceTyped), подтверждение (домотать/листнуть/пропустить).
  */
 class DialogBoxTest {
 
@@ -37,16 +38,15 @@ class DialogBoxTest {
     }
 
     @Test
-    void typewriterRevealsCharsPerTick() {
+    void normalSpeedTypesOneCharPerTick() {
+        // 5d: «обычно» = 10 десятых = 1 симв/тик (10 симв/с) — вдвое быстрее
+        // 5c (тогда 2 тика/символ = 5 симв/с, «прям медленно»)
         DialogBox d = new DialogBox();
-        d.setSpeed(2);                       // 1 символ каждые 2 тика
+        d.setSpeed(10);
         d.show("abcde fg", 50, M10);         // 80px>50 -> «abcde»/«fg», pageLen=7
         assertEquals("", d.line(0), "печать ещё не началась");
         d.tick();
-        assertEquals("", d.line(0));
-        d.tick();
         assertEquals("a", d.line(0));
-        d.tick();
         d.tick();
         assertEquals("ab", d.line(0));
         assertTrue(d.isTyping());
@@ -58,16 +58,78 @@ class DialogBoxTest {
     }
 
     @Test
+    void fastSpeedTypesTwoCharsPerTick() {
+        DialogBox d = new DialogBox();
+        d.setSpeed(20);                       // «быстро»: 2 симв/тик
+        d.show("abcde fg", 50, M10);
+        d.tick();
+        assertEquals("ab", d.line(0));
+        d.tick();
+        assertEquals("abcd", d.line(0));
+        d.tick();                             // 5-й символ + переход на строку 2
+        assertEquals("abcde", d.line(0));
+        assertEquals("f", d.line(1));
+    }
+
+    @Test
+    void slowSpeedTypesCharEveryTwoTicks() {
+        DialogBox d = new DialogBox();
+        d.setSpeed(5);                        // «медленно»: 0.5 симв/тик
+        d.show("ab cd", 20, M10);            // «ab»/«cd»
+        d.tick();
+        assertEquals("", d.line(0), "аккумулятор ещё не набрал 10 десятых");
+        d.tick();
+        assertEquals("a", d.line(0));
+        d.tick();
+        assertEquals("a", d.line(0), "нечётный тик — без символа");
+        d.tick();
+        assertEquals("ab", d.line(0));
+    }
+
+    @Test
     void typewriterSpillsIntoSecondLine() {
         DialogBox d = new DialogBox();
-        d.setSpeed(1);
+        d.setSpeed(10);
         d.show("ab cd", 20, M10);            // «ab cd»=50px -> «ab»/«cd»
         d.tick();                            // typed=1
         assertEquals("a", d.line(0));
         assertEquals("", d.line(1));
-        d.tick(); d.tick();                  // typed=3 (2-я строка началась)
+        assertEquals(0, d.typingRow(), "головка в первой строке");
+        d.tick();                            // typed=2 — строка 1 допечатана
+        assertEquals("ab", d.line(0));
+        assertEquals("", d.line(1));
+        assertEquals(1, d.typingRow(), "каретка перешла на строку 2");
+        d.tick();                            // typed=3
         assertEquals("ab", d.line(0));
         assertEquals("c", d.line(1));
+        assertEquals(1, d.typingRow());
+    }
+
+    @Test
+    void typingRowMinusOneWhenPageDoneOrPassive() {
+        DialogBox d = new DialogBox();
+        assertEquals(-1, d.typingRow(), "до показа — пассивен");
+        d.setSpeed(10);
+        d.show("ab", 100, M10);             // одна строка, pageLen=2
+        assertEquals(0, d.typingRow());
+        d.tick();
+        d.tick();
+        assertEquals(-1, d.typingRow(), "страница допечатана");
+        assertFalse(d.isTyping());
+    }
+
+    @Test
+    void sinceTypedCountsTicksAfterLastChar() {
+        // «свежие чернила»: 0 в тик печати символа, растёт в тиках ожидания
+        DialogBox d = new DialogBox();
+        d.setSpeed(5);                        // символ раз в 2 тика
+        d.show("abc", 100, M10);
+        d.tick();
+        assertEquals(1, d.sinceTyped(), "тик без символа");
+        d.tick();
+        assertEquals(0, d.sinceTyped(), "символ напечатан");
+        d.tick();
+        assertEquals(1, d.sinceTyped(), "снова тик ожидания");
     }
 
     @Test
@@ -85,9 +147,10 @@ class DialogBoxTest {
     @Test
     void speedChangeDuringTypingCompletesPage() {
         DialogBox d = new DialogBox();
-        d.setSpeed(4);
+        d.setSpeed(5);
         d.show("ab cd", 20, M10);
-        d.tick();                            // ничего (acc=1 < 4)
+        d.tick();                            // ничего (acc10=5 < 10)
+        assertEquals("", d.line(0));
         d.setSpeed(0);                       // игрок переключил на «мгновенно»
         assertTrue(d.pageShown());
     }

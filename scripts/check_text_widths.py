@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Проверка ширины текстов паков (ЭТАП 5C — диалоговый бокс порта).
+"""Проверка ширины текстов паков (ЭТАП 5C/5D — диалоговый бокс порта).
 
 Бокс порта (dialogBoxRender + TextFmt.wrapWords): перенос ПО СЛОВАМ,
-лимит 240 - 2*stringWidth("В"), страницы по 2 строки, печатная машинка.
+лимит 216px = WIDTH - 2*fW оригинала (полноширинный CJK fW=12) — этап 5d
+уравнял перенос с оригиналом (было 240-2*«В»=226 при узкой «В»=7px из
+Fusion Pixel). Текст начинается с x=10, бокс с рамкой 1..238.
 Текст длиннее 2 строк больше НЕ обрезается — пейджер листает страницы;
 ПРОВАЛОМ считается только слово шире лимита бокса.
 
@@ -121,10 +123,12 @@ def wrap_words(s: str, limit: float):
 
 
 def main() -> int:
-    limit = 240 - 2 * width("В")
-    safe_limit = limit * 0.97  # 3% запас хинтинга PIL/FreeType
-    print(f"лимит бокса: {limit:.0f}px (с запасом {safe_limit:.0f}px), "
-          f"шрифт Fusion Pixel 12px, В={width('В'):.1f}px, word wrap")
+    # ЭТАП 5d: лимит бокса — как в оригинале (WIDTH - 2*fW, fW=12),
+    # плюс страховой запас 3% на разницу хинтинга PIL/FreeType
+    limit = 216
+    safe_limit = limit * 0.97
+    print(f"лимит бокса: {limit}px (с запасом {safe_limit:.0f}px), "
+          f"шрифт Fusion Pixel 12px, x=10, word wrap")
     failures = []
     paged = []
     for pack in ("ru-vpk", "ru-auth"):

@@ -1304,7 +1304,7 @@ public final class GameScene implements Scene {
     private int drawLadder(SpriteBatch batch, String[] lines, int x, int y,
                            int start, int count) {
         Fonts f = host.fonts();
-        int di = f.height();
+        int di = Fonts.LINE_STEP;   // 5d: fH системного шрифта K700
         int s = start;
         if (s <= 0) {
             s = 0;
@@ -1351,50 +1351,92 @@ public final class GameScene implements Scene {
         // @formatter:on
     }
 
-    /** do(String) (drawstringToScreen) — ЭТАП 5c: бокс порта с рамкой,
+    /** Геометрия диалогового бокса (этап 5d): отступ текста от края,
+     *  ширина строк и верх первой строки. Ширина 216px — лимит оригинала
+     *  (WIDTH - 2*fW, полноширинный CJK fW=12): «В» из Fusion Pixel узкая
+     *  (7px), и формула оригинала x=fW-7 давала x=0 — текст прижимался
+     *  к рамке, которую бокс порта рисует поверх (этап 5c). */
+    private static final int BOX_TEXT_X = 10;
+    private static final int BOX_TEXT_W = 216;
+    private static final int BOX_TEXT_Y = 277;
+
+    /** do(String) (drawstringToScreen) — ЭТАП 5c/5d: бокс порта с рамкой,
      *  переносом по словам, страницами по 2 строки и печатной машинкой.
-     *  Геометрия строк и цвет (250,223,134) — как в оригинале. */
+     *  Шаг строк — Fonts.LINE_STEP (пиксельная сетка + 2px), а не lineHeight
+     *  FreeType: межстрочный воздух оригинала задавался системным шрифтом
+     *  K700 (fH около 12-14), lineHeight Fusion (~18) растягивал строки.
+     *  Анимация (5d): каретка-блок за последним символом и вспышка свежего
+     *  символа пока страница печатается; anja-самоцвет мигает, когда
+     *  страница допечатана. */
     private void dialogBoxRender(SpriteBatch batch, Assets a) {
         Fonts f = host.fonts();
         if (!bf.equals(dialog.shownText())) {
-            dialog.setSpeed(textSpeedTicks());
-            dialog.show(bf, 240 - 2 * f.stringWidth("В"), f::stringWidth);
+            dialog.setSpeed(textSpeedTenths());
+            dialog.show(bf, BOX_TEXT_W, f::stringWidth);
         }
         a.fill(batch, 0, 268, 240, 52, 0, 0, 0, 1);
         drawBoxFrame(batch, a, 1, 269, 238, 50);
-        int x = f.stringWidth("В") - 4 - 3;
-        f.draw(batch, dialog.line(0), x, 275, 250, 223, 134);
-        f.draw(batch, dialog.line(1), x, 320 - f.height() - 4, 250, 223, 134);
-        int y = host.tick() % 2 == 0 ? 309 : 308;   // Timer e % 2
-        batch.draw(a.region("anja.png"), 228, y);
+        for (int row = 0; row < 2; row++) {
+            int y = BOX_TEXT_Y + row * Fonts.LINE_STEP;
+            String vis = dialog.line(row);
+            f.draw(batch, vis, BOX_TEXT_X, y, 250, 223, 134);
+            // «свежие чернила»: последний напечатанный символ ярче на 2 тика
+            if (dialog.isTyping() && dialog.typingRow() == row
+                    && dialog.sinceTyped() <= 1 && !vis.isEmpty()) {
+                String head = vis.substring(0, vis.length() - 1);
+                f.draw(batch, vis.substring(vis.length() - 1),
+                        BOX_TEXT_X + f.stringWidth(head), y, 255, 244, 200);
+            }
+        }
+        if (dialog.isTyping()) {
+            // каретка — мигающий блок за печатной головкой (цикл 0.6 c)
+            if (host.tick() / 3 % 2 == 0) {
+                int row = dialog.typingRow();
+                int cx = BOX_TEXT_X + f.stringWidth(dialog.line(row));
+                a.fill(batch, cx + 2, BOX_TEXT_Y + row * Fonts.LINE_STEP + 4,
+                        3, 9, 250 / 255f, 223 / 255f, 134 / 255f, 1);
+            }
+        } else {
+            // anja: Timer e % 2 оригинала; самоцвет — в правом нижнем углу
+            // рамки (в оригинале (WIDTH-12, 192) — блуждающий самоцвет,
+            // порт этапа 5c сажал его на угол рамки; теперь внутри рамки)
+            int ay = host.tick() % 2 == 0 ? 305 : 306;
+            batch.draw(a.region("anja.png"), 224, ay);
+        }
     }
 
     /** Двойная пиксельная рамка бокса (этап 5c): верх/лево — светлый
-     *  песочный в цвет текста, низ/право — тёмный, углы срезаны на 2px. */
+     *  песочный в цвет текста, низ/право — тёмный, углы срезаны на 2px.
+     *  (5d: цвета 0..255 -> /255f — Assets.fill ждёт float 0..1; до этого
+     *  литералы клампились в 1.0 и рамка рисовалась белой.) */
     private static void drawBoxFrame(SpriteBatch batch, Assets a,
                                      int x, int y, int w, int h) {
-        a.fill(batch, x + 2, y, w - 4, 1, 250, 223, 134, 1);
-        a.fill(batch, x, y + 2, 1, h - 4, 250, 223, 134, 1);
-        a.fill(batch, x + 2, y + h - 1, w - 4, 1, 166, 140, 84, 1);
-        a.fill(batch, x + w - 1, y + 2, 1, h - 4, 166, 140, 84, 1);
-        a.fill(batch, x + 1, y + 1, 1, 1, 208, 181, 109, 1);
-        a.fill(batch, x + w - 2, y + 1, 1, 1, 208, 181, 109, 1);
-        a.fill(batch, x + 1, y + h - 2, 1, 1, 208, 181, 109, 1);
-        a.fill(batch, x + w - 2, y + h - 2, 1, 1, 208, 181, 109, 1);
+        a.fill(batch, x + 2, y, w - 4, 1, 250 / 255f, 223 / 255f, 134 / 255f, 1);
+        a.fill(batch, x, y + 2, 1, h - 4, 250 / 255f, 223 / 255f, 134 / 255f, 1);
+        a.fill(batch, x + 2, y + h - 1, w - 4, 1, 166 / 255f, 140 / 255f, 84 / 255f, 1);
+        a.fill(batch, x + w - 1, y + 2, 1, h - 4, 166 / 255f, 140 / 255f, 84 / 255f, 1);
+        a.fill(batch, x + 1, y + 1, 1, 1, 208 / 255f, 181 / 255f, 109 / 255f, 1);
+        a.fill(batch, x + w - 2, y + 1, 1, 1, 208 / 255f, 181 / 255f, 109 / 255f, 1);
+        a.fill(batch, x + 1, y + h - 2, 1, 1, 208 / 255f, 181 / 255f, 109 / 255f, 1);
+        a.fill(batch, x + w - 2, y + h - 2, 1, 1, 208 / 255f, 181 / 255f, 109 / 255f, 1);
     }
 
-    /** Скорость печатной машинки из настроек: тиков на символ (0 = мгновенно). */
-    private static int textSpeedTicks() {
+    /** Скорость печатной машинки из настроек: десятых долей символа
+     *  за тик (тик = 0.1 c). 0 = мгновенно (как в оригинале),
+     *  20 = 2 симв/тик (быстро, 20 симв/с), 10 = 1 (обычно, 10 симв/с —
+     *  ускорено в 5d: было 2 тика/символ = 5 симв/с, «прям медленно»),
+     *  5 = 0.5 (медленно, 5 симв/с). */
+    private static int textSpeedTenths() {
         String v = Settings.get("textspeed", "normal");
         switch (v) {
             case "instant":
                 return 0;
             case "fast":
-                return 1;
+                return 20;
             case "slow":
-                return 4;
+                return 5;
             default:
-                return 2;
+                return 10;
         }
     }
 
@@ -1704,14 +1746,20 @@ public final class GameScene implements Scene {
         batch.draw(a.region("js.png"), (240 - 176) / 2, 20);
     }
 
-    /** ЭТАП 5c: фоновая тема комнаты. «Тени» (mapbg2) — тёмное крыло дома:
-     *  5 «там кто-то есть», 6 «повеяло холодом», 7 «нет ручки»,
-     *  8 «за мной наблюдают», 16 «сердитый голос», 17 «ты не выйдешь»;
-     *  в остальном доме — mapbg оригинала. */
+    /** ЭТАП 5c/5d: фоновая тема комнаты. Три зоны дома:
+     *  «Тени» (mapbg2) — тёмное крыло: 5 «там кто-то есть», 6 «повеяло
+     *  холодом», 7 «нет ручки», 8 «за мной наблюдают», 16 «сердитый
+     *  голос», 17 «ты не выйдешь»; «Шкатулка» (mapbg3) — крыло
+     *  головоломок 9-15 (библиотека, туалет, кладовые, шкаф, карта,
+     *  машина — игрок подолгу разбирается в секретах, вальс музыкальной
+     *  шкатулки с тик-так); в остальном доме (0-4: спальня, сейф,
+     *  коридоры) — mapbg оригинала. */
     static int roomTrack(int room) {
         switch (room) {
             case 5: case 6: case 7: case 8: case 16: case 17:
                 return SoundManager.CH_MAPBG2;
+            case 9: case 10: case 11: case 12: case 13: case 14: case 15:
+                return SoundManager.CH_MAPBG3;
             default:
                 return SoundManager.CH_MAPBG;
         }
@@ -1749,7 +1797,7 @@ public final class GameScene implements Scene {
         a.fill(batch, 0, 0, 240, 320, 0, 0, 0, 1);
         Fonts f = host.fonts();
         f.drawCentered(batch, Texts.INFO_TITLE, 5, 100, 100, 255);
-        int di = f.height();
+        int di = Fonts.INK_HEIGHT;  // 5d: сетка 12px вместо lineHeight ~18
         String[] lines = Texts.INFO_LINES;
         int[] ys = {15 + di, 20 + 2 * di, 22 + 3 * di, 24 + 4 * di};
         for (int idx = 0; idx < lines.length; idx++) {
