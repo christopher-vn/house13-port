@@ -63,6 +63,41 @@ class HotZonesTest {
     }
 
     @Test
+    void room0PhoneRealKeysAfterArrowRelease() {
+        // Регрессия баг-репорта «шкаф не открывается, Enter показывает только
+        // подсказку»: флаги направлений dQ/c/b/b3 — ЗАЩЁЛКА «куда смотрит рука»,
+        // keyReleased оригинала (b.java 1319-1338) их НЕ сбрасывает — гасится
+        // только движение (d6/r/ac/bn/Z/c9/goto/else/char). Порт гасил флаги в
+        // Hand.release(): игрок шёл вверх, ОТПУСКАЛ стрелку, жал Enter — и '5'
+        // не попадал ни в одну хот-зону. Тап-семантика press5 это маскировала.
+        game.room.room = 0;
+        game.room.hand.j = 57;      // зона тумбы 48..66 x 176..184
+        game.room.hand.i = 180;
+        // 1) реальная ходьба с удержанием стрелки (стена тумбы блокирует i=180)
+        game.tick(new int[]{Input.Keys.UP}, new int[0]);
+        assertTrue(game.room.hand.dirUp, "нажатие вверх: dirUp установлен");
+        game.tick(new int[0], new int[0]);
+        assertEquals(180, game.room.hand.i, "рука упирается в тумбу");
+        // 2) отпускание стрелки и пауза: движение стоп, направление ОСТАЁТСЯ
+        game.tick(new int[0], new int[]{Input.Keys.UP});
+        assertFalse(game.room.hand.moving, "отпускание: движение остановлено");
+        assertEquals(0, game.room.hand.dy);
+        game.tick(new int[0], new int[0]);
+        assertTrue(game.room.hand.dirUp, "dirUp — защёлка, живёт после отпускания");
+        assertEquals(Texts.R0_PHONE_HOVER, game.bf, "подсказка видна (как в оригинале)");
+        // 3) Enter БЕЗ удержания стрелки: первое нажатие — тумба открыта
+        game.tick(new int[]{Input.Keys.ENTER}, new int[0]);
+        assertTrue(game.cE, "первый Enter после отпускания стрелки: тумба открыта");
+        assertEquals(1, game.E);
+        assertEquals(Texts.R0_PHONE_KEY_HOVER, game.bf, "подсказка сменилась на «забрать ключ»");
+        // 4) второй Enter — ключ из-под телефона
+        game.tick(new int[]{Input.Keys.ENTER}, new int[0]);
+        assertTrue(game.d4, "второй Enter: ключ взят");
+        assertTrue(game.v);
+        assertEquals(2, game.inv.slots[0].id, "предмет 2 (ключ) в слоте 0");
+    }
+
+    @Test
     void room0KeyOpensDoorAndTransition() {
         game.inv.createTool("shouji1.png", 2, 2, 15, 27);
         game.inv.current = 0;

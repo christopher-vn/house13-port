@@ -229,8 +229,9 @@ public class House13Game implements ApplicationListener, GameHost {
             return;
         }
         // Составные токены этапа 4: UF/DF/LF/RF — направление + FIRE
-        // в одном тике (нажатие направления ставит флаг dQ/c/b/b3, затем
-        // '5' попадает в хот-зоны с уже выставленным направлением)
+        // в одном тике. После фикса защёлки направлений (Hand.release не
+        // сбрасывает dQ/c/b/b3 — как keyReleased оригинала) обычный F
+        // тоже попадает в хот-зоны; UF оставлен для совместимости сценариев.
         if (t.length() == 2 && t.charAt(1) == 'F') {
             int dir = scriptKey(t.substring(0, 1));
             if (dir >= 0) {

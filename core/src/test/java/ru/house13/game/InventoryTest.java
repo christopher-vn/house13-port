@@ -101,7 +101,7 @@ class InventoryTest {
         assertEquals("Золотой ключик", Inventory.nameOf(14));
         assertEquals("Хреновина", Inventory.nameOf(7));
         assertEquals("Пожалуйста, выберите пункты.", Inventory.nameOf(0));
-        assertEquals("Используйте клавишу \"5\".", Inventory.nameOf(2));
+        assertEquals("Используйте клавишу Enter.", Inventory.nameOf(2));
     }
 
     @Test

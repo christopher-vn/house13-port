@@ -156,8 +156,8 @@ public final class Texts {
     public static String R13_BOOKS_1 = "Тут не хватает несколько     томов...";
     public static String R13_BOOKS_2 = "На книгах нет пыли...Ими  иногда пользуются";
     public static String R13_BOOKS_3 = "Интересно,каких книг не хватает?..";
-    public static String R0_PHONE_HOVER = "-Интересно,что в шкафу?..Чтобы открыть,нажми\"5\"";
-    public static String R0_PHONE_KEY_HOVER = "-Ух,ты!Ключ!.. Чтобы         получить,нажми \"5\"";
+    public static String R0_PHONE_HOVER = "-Интересно,что в шкафу?..Чтобы открыть,нажми Enter";
+    public static String R0_PHONE_KEY_HOVER = "-Ух,ты!Ключ!.. Чтобы         получить,нажми Enter";
     public static String R0_BOTTOM_DOOR = "Дверь закрыта... ";
     public static String R1_SAFE_KEY = "-Хм...Еще один ключ...Пожалуй возьму, пригодится";
     public static String R5_DOOR_0 = "-Закрыто...Тихо! По-моему там кто-то есть... ";
@@ -181,7 +181,7 @@ public final class Texts {
     public static String R14_BATTERY = "В тайнике дома вы обнаружили аккумулятор";
     public static String R14_MAP_HOVER = "-Какая-то карта... Ничего     не понимаю...";
     public static String R3_BIG_KEY_FITS = "Большой ключ подошел... Дверь открылась";
-    public static String R0_KEY_OPENS = "Теперь дверь открыта. Чтобы войти,нажми \"5\"";
+    public static String R0_KEY_OPENS = "Теперь дверь открыта. Чтобы войти,нажми Enter";
     public static String R16_ROPE_ON_BEAM = "Снова голос: -Будешь вешаться - возьми мыло!..";
     public static String R5_GREEN_KEY_FITS = "Так вот откуда зеленый ключ.Дверь открылась";
     public static String R8_SWAP_HAMMER = "Классно я придумала заменить молоток хренью!";
@@ -202,7 +202,7 @@ public final class Texts {
     // CN-соответствия:色子钥匙=кубик-ключ, 书房钥匙=ключ от кабинета и т.д.
     // ==================================================================
     public static String ITEM_1 = "Крюк";
-    public static String ITEM_2 = "Используйте клавишу \"5\".";
+    public static String ITEM_2 = "Используйте клавишу Enter.";
     public static String ITEM_3 = "Большой ключ";
     public static String ITEM_4 = "Маленький ключ";
     public static String ITEM_5 = "Книги";
