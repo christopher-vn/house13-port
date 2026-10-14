@@ -20,11 +20,6 @@
   "ABOUT_ROWS": 8,
   "SOUND_ON": "Включить звук",
   "SOUND_OFF": "Выключить звук",
-  "SOUND_ON_Y": 142,
-  "SOUND_OFF_Y": 168,
-  "SOUND_SHOU_DX": 100,
-  "MUSIC_TITLE": "Настройка звука",
-  "MUSIC_UNDERLINE": "____________",
   "INFO_TITLE": "С П Р А В К А",
   "INFO_LINES": [
     "Подсказка:",
@@ -124,6 +119,13 @@
   "ITEM_SELECT_PROMPT": "Выберите предмет.",
   "TR_AUTH": "Авторский",
   "TR_VPK": "Локализаторский",
-  "SETTINGS_HINT": "Стрелки: звук/перевод, Enter - назад",
-  "SETTINGS_TR_TITLE": "Перевод:"
+  "SETTINGS_HINT": "Вверх/вниз - пункт, влево/вправо - выбор",
+  "SETTINGS_TR_TITLE": "Перевод:",
+  "SETTINGS_TITLE": "НАСТРОЙКИ",
+  "SET_TEXT": "Текст",
+  "VAL_INSTANT": "Мгновенно",
+  "VAL_FAST": "Быстро",
+  "VAL_NORMAL": "Обычно",
+  "VAL_SLOW": "Медленно",
+  "SET_BACK": "Назад"
 }

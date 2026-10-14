@@ -94,6 +94,9 @@ public class House13Game implements ApplicationListener, GameHost {
         assets = new Assets();
         sound = SoundManager.createDefault();
         fonts = new Fonts();
+        // ЭТАП 5c: сохранённое состояние звука (настройки персистятся)
+        SoundManager.canSound = !"off".equals(
+                ru.house13.engine.Settings.get("sound", "on"));
 
         parseDebugProps();
         scene = initialScene();

@@ -71,22 +71,24 @@ class GameSceneTest {
     }
 
     @Test
-    void pauseItem2OpensMusicOverlayTogglesSound() {
+    void pauseItem2OpensSettingsScreen() {
         openPause();
         game.tick(new int[]{Input.Keys.DOWN}, new int[0]);
         game.tick(new int[]{Input.Keys.DOWN}, new int[0]); // пункт 2
         game.tick(new int[]{Input.Keys.ENTER}, new int[0]);
         assertTrue(game.musicOverlay);
         assertFalse(game.pause);
+        // этап 5c: настройки (SettingsScreen), пункт 0 = звук
         assertTrue(SoundManager.canSound);
-        game.tick(new int[]{Input.Keys.UP}, new int[0]); // переключение
+        game.tick(new int[]{Input.Keys.LEFT}, new int[0]);  // влево = выкл
         assertFalse(SoundManager.canSound);
-        game.tick(new int[]{Input.Keys.DOWN}, new int[0]);
+        game.tick(new int[]{Input.Keys.RIGHT}, new int[0]); // вправо = вкл
         assertTrue(SoundManager.canSound);
-        // назад в паузу
-        game.tick(new int[]{Input.Keys.ESCAPE}, new int[0]); // правый софт в оверлее — нет эффекта
-        assertTrue(game.musicOverlay);
-        game.tick(new int[]{Input.Keys.ENTER}, new int[0]); // FIRE -> назад в паузу
+        // вверх/вниз — навигация по пунктам (звук больше не тумблерится)
+        game.tick(new int[]{Input.Keys.DOWN}, new int[0]);
+        assertEquals(SettingsScreen.ROW_TRANSLATION, game.settingsScreen.row);
+        // правый софт (Esc) — назад в паузу
+        game.tick(new int[]{Input.Keys.ESCAPE}, new int[0]);
         assertTrue(game.pause);
         assertFalse(game.musicOverlay);
     }

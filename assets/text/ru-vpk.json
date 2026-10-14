@@ -16,11 +16,6 @@
   "ABOUT_ROWS": 8,
   "SOUND_ON": "Звук:  ДА",
   "SOUND_OFF": "Звук:  НЕТ",
-  "SOUND_ON_Y": 142,
-  "SOUND_OFF_Y": 168,
-  "SOUND_SHOU_DX": 100,
-  "MUSIC_TITLE": "Настройка звука",
-  "MUSIC_UNDERLINE": "____________",
   "INFO_TITLE": " ИНФОРМАЦИЯ",
   "INFO_LINES": [
     "В игре НЕТ сохранения!",
@@ -120,6 +115,13 @@
   "ITEM_SELECT_PROMPT": "Пожалуйста, выберите пункты.",
   "TR_AUTH": "Авторский",
   "TR_VPK": "Локализаторский",
-  "SETTINGS_HINT": "Стрелки: звук/перевод, Enter - назад",
-  "SETTINGS_TR_TITLE": "Перевод:"
+  "SETTINGS_HINT": "Вверх/вниз - пункт, влево/вправо - выбор",
+  "SETTINGS_TR_TITLE": "Перевод:",
+  "SETTINGS_TITLE": "НАСТРОЙКИ",
+  "SET_TEXT": "Текст",
+  "VAL_INSTANT": "Мгновенно",
+  "VAL_FAST": "Быстро",
+  "VAL_NORMAL": "Обычно",
+  "VAL_SLOW": "Медленно",
+  "SET_BACK": "Назад"
 }

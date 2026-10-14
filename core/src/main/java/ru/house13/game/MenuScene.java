@@ -29,9 +29,13 @@ public final class MenuScene implements Scene {
     private final GameHost host;
 
     // видимость package-private — прямой доступ из юнит-тестов
-    int bO = 0;     // menuStatus_: 0 main, 1 about, 2 sound, 3 help
+    int bO = 0;     // menuStatus_: 0 main, 1 about, 2 sound(=настройки 5c), 3 help
     int dV = 0;     // currentKeyCode: выбранный пункт 0..4
     int dA = 0;     // menuCount_: скролл текста помощи
+
+    /** Экран настроек (этап 5c) — общий с игровой паузой; кэши меню
+     *  (help/about) пересобираются сами по штампу пака при смене перевода. */
+    final SettingsScreen settings = new SettingsScreen(null);
 
     // анимация входа (l())
     private int dO = 0;     // caxia: слайд панели
@@ -99,11 +103,16 @@ public final class MenuScene implements Scene {
         if (!cv) {
             return; // if (this.cv) — гейт ввода
         }
+        // ЭТАП 5c: экран настроек (бывший экран звука + группа «Перевод»)
+        if (bO == 2) {
+            if (settings.handleKey(k)) {
+                bO = 0;              // «Назад»/софт — в главное меню
+            }
+            return;
+        }
         if (k == J2.UP) {
             if (bO != 3 && bO != 1) {
-                if (bO == 2) {
-                    SoundManager.canSound = !SoundManager.canSound;
-                } else if (bO == 0) {
+                if (bO == 0) {
                     dV = (dV + 4) % 5;
                 }
             } else {
@@ -112,9 +121,7 @@ public final class MenuScene implements Scene {
         }
         if (k == J2.DOWN) {
             if (bO != 3 && bO != 1) {
-                if (bO == 2) {
-                    SoundManager.canSound = !SoundManager.canSound;
-                } else if (bO == 0) {
+                if (bO == 0) {
                     dV = (dV + 1) % 5;
                 }
             } else {
@@ -148,9 +155,6 @@ public final class MenuScene implements Scene {
         }
         // назад: FIRE || правый софт || '5'  (bc || cc || 53)
         if (k == J2.FIRE || k == J2.SOFT_RIGHT || k == J2.NUM_5) {
-            if (dV == 2 && bO == 2) {
-                bO = 0;
-            }
             if (dV == 3 && bO == 3) {
                 bO = 0;
                 dA = 0;
@@ -159,16 +163,6 @@ public final class MenuScene implements Scene {
                 bO = 0;
                 dA = 0;
             }
-        }
-        // ЭТАП 5: 4/6 на экране настроек — переключение перевода.
-        // В оригинале LEFT/RIGHT на bO==2 не обрабатывались (только 2/8 — звук).
-        if (bO == 2 && (k == J2.LEFT || k == J2.RIGHT)) {
-            String next = Texts.pack().equals(Texts.PACK_VPK)
-                    ? Texts.PACK_AUTH : Texts.PACK_VPK;
-            Texts.reload(next);
-            ru.house13.engine.Settings.put("textpack", next);
-            helpLines = null;   // strsToShow == null в оригинале — пересбор
-            aboutLines = null;
         }
     }
 
@@ -200,44 +194,12 @@ public final class MenuScene implements Scene {
                 batch.draw(strip, 72, it[1]);
             }
         } else if (bO == 2) {
-            renderSound(batch, a, snd);
+            settings.render(batch, host);   // этап 5c: чёрный экран настроек
         } else if (bO == 3) {
             renderHelp(batch, a);
         } else if (bO == 1) {
             renderAbout(batch, a);
         }
-    }
-
-    /** Экран звука (b()) — ЭТАП 5: дополнен группой «Перевод» (дополнение
-     *  порта, в оригиналах отсутствует): выбор пака текстов 4/6, шрифт
-     *  и указатель — как у строк звука. */
-    private void renderSound(SpriteBatch batch, Assets a, SoundManager snd) {
-        a.fill(batch, 0, 0, 240, 320, 1f / 255f, 1f / 255f, 1f / 255f, 1);
-        drawFrame(batch, a);
-        if (!SoundManager.canSound) {
-            snd.closedMid(SoundManager.CH_MENU); // b(): do(0) — стоп при выкл. звуке
-        }
-        Fonts f = host.fonts();
-        int x = (240 - f.stringWidth(Texts.SOUND_ON)) / 2;
-        f.drawShadow(batch, Texts.SOUND_ON, x, Texts.SOUND_ON_Y);
-        f.drawShadow(batch, Texts.SOUND_OFF, x, Texts.SOUND_OFF_Y);
-        int sy = SoundManager.canSound ? Texts.SOUND_ON_Y + 2 : Texts.SOUND_OFF_Y;
-        batch.draw(a.region("shou.png"), x + Texts.SOUND_SHOU_DX, sy);
-
-        // ---- группа «Перевод»: заголовок + две строки + shou на активном ----
-        int tw = Math.max(f.stringWidth(Texts.TR_AUTH), f.stringWidth(Texts.TR_VPK));
-        int tx = (240 - tw) / 2;
-        f.draw(batch, Texts.SETTINGS_TR_TITLE, (240 - f.stringWidth(Texts.SETTINGS_TR_TITLE)) / 2,
-                208, 200, 200, 200);
-        boolean auth = Texts.pack().equals(Texts.PACK_AUTH);
-        f.drawShadow(batch, Texts.TR_AUTH, tx, 236, auth ? 255 : 200, auth ? 255 : 200, auth ? 255 : 200);
-        f.drawShadow(batch, Texts.TR_VPK, tx, 266, !auth ? 255 : 200, !auth ? 255 : 200, !auth ? 255 : 200);
-        String active = auth ? Texts.TR_AUTH : Texts.TR_VPK;
-        int ay = auth ? 236 : 266;
-        batch.draw(a.region("shou.png"), tx + f.stringWidth(active) + 8, ay);
-        // серая подсказка управления
-        f.draw(batch, Texts.SETTINGS_HINT,
-                (240 - f.stringWidth(Texts.SETTINGS_HINT)) / 2, 296, 150, 150, 150);
     }
 
     /** Экран помощи (case()): скролл dA, 11 строк (CN-издание: 7), тень+белый (пейджер for). */

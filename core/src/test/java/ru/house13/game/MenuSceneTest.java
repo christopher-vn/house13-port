@@ -63,19 +63,26 @@ class MenuSceneTest {
     }
 
     @Test
-    void selectFiveOpensSoundScreenAndToggles() {
+    void selectFiveOpensSettingsScreen() {
         slideIn();
         menu.tick(new int[]{Input.Keys.DOWN}, new int[0]); // dV=1
         menu.tick(new int[]{Input.Keys.DOWN}, new int[0]); // dV=2 (ЗВУК)
         menu.tick(new int[]{Input.Keys.ENTER}, new int[0]);
-        assertEquals(2, menu.bO, "ЗВУК -> menuStatus_ 2");
+        assertEquals(2, menu.bO, "ЗВУК -> настройки (menuStatus_ 2)");
 
-        // в экране звука вверх/вниз переключают canSound
+        // этап 5c: пункт 0 = звук; влево/вправо тумблер, вверх/вниз — навигация
         assertTrue(SoundManager.canSound);
-        menu.tick(new int[]{Input.Keys.UP}, new int[0]);
+        menu.settings.row = 0;
+        menu.tick(new int[]{Input.Keys.LEFT}, new int[0]);
         assertFalse(SoundManager.canSound);
+        menu.tick(new int[]{Input.Keys.RIGHT}, new int[0]);
+        assertTrue(SoundManager.canSound);
 
-        // FIRE из экрана звука возвращает в главное меню (второй блок char())
+        // 3x вниз -> «Назад», FIRE закрывает в главное меню
+        menu.tick(new int[]{Input.Keys.DOWN}, new int[0]);
+        menu.tick(new int[]{Input.Keys.DOWN}, new int[0]);
+        menu.tick(new int[]{Input.Keys.DOWN}, new int[0]);
+        assertEquals(SettingsScreen.ROW_BACK, menu.settings.row);
         menu.tick(new int[]{Input.Keys.ENTER}, new int[0]);
         assertEquals(0, menu.bO);
     }
@@ -141,21 +148,21 @@ class MenuSceneTest {
         slideIn();
         menu.tick(new int[]{Input.Keys.DOWN}, new int[0]);   // dV=1
         menu.tick(new int[]{Input.Keys.DOWN}, new int[0]);   // dV=2 ЗВУК
-        menu.tick(new int[]{Input.Keys.ENTER}, new int[0]); // bO=2
+        menu.tick(new int[]{Input.Keys.ENTER}, new int[0]); // bO=2 настройки
         assertEquals(2, menu.bO);
         assertEquals(Texts.PACK_VPK, Texts.pack());
 
-        menu.tick(new int[]{Input.Keys.LEFT}, new int[0]);  // 4 -> авторский
+        // пункт 1 = перевод
+        menu.tick(new int[]{Input.Keys.DOWN}, new int[0]);
+        assertEquals(SettingsScreen.ROW_TRANSLATION, menu.settings.row);
+
+        menu.tick(new int[]{Input.Keys.LEFT}, new int[0]);  // <- авторский
         assertEquals(Texts.PACK_AUTH, Texts.pack(), "LEFT переключает пак");
         assertEquals(Texts.PACK_AUTH, Settings.get("textpack", "x"), "выбор сохранён");
 
-        menu.tick(new int[]{Input.Keys.RIGHT}, new int[0]); // 6 -> обратно V.P.K
+        menu.tick(new int[]{Input.Keys.RIGHT}, new int[0]); // -> обратно V.P.K
         assertEquals(Texts.PACK_VPK, Texts.pack());
         assertEquals(Texts.PACK_VPK, Settings.get("textpack", "x"));
-
-        // 2/8 по-прежнему переключают звук (оригинальное поведение)
-        menu.tick(new int[]{Input.Keys.UP}, new int[0]);
-        assertFalse(ru.house13.engine.SoundManager.canSound);
     }
 
     @Test

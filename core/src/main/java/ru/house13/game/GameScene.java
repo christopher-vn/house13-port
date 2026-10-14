@@ -94,6 +94,8 @@ public final class GameScene implements Scene {
     boolean kFlag;           // k (guanzi): диалог перекрывает хот-зоны
     int n;                   // shuodi: строка многострочного диалога
     final DialogBox dialog = new DialogBox(); // бокс порта (этап 5c)
+    /** Экран настроек (этап 5c) — общий с главным меню; вместо оверлея g(). */
+    final SettingsScreen settingsScreen = new SettingsScreen(null);
 
     // ---- флаги комнат (try(int)/u()); имена — из RU b.java
     boolean l;               // дверь спальни отперта
@@ -458,6 +460,16 @@ public final class GameScene implements Scene {
                 && dialog.confirm()) {
             return;
         }
+        // ЭТАП 5c: оверлей настроек (бывш. «Настройка звука» g()) — все
+        // клавиши уходят в SettingsScreen; закрытие — назад в паузу
+        // (семантика [W]-else оригинала).
+        if (musicOverlay) {
+            if (settingsScreen.handleKey(k)) {
+                musicOverlay = false;
+                pause = true;
+            }
+            return;
+        }
         // 1) FIRE -> '5' (без оверлеев; byte 949)
         if (k == J2.FIRE && !pause && !info && !musicOverlay) {
             k = J2.NUM_5;
@@ -509,12 +521,6 @@ public final class GameScene implements Scene {
                 }
                 if (k == J2.DOWN || k == J2.NUM_8) {
                     pauseItem = (pauseItem + 1) % 4;
-                }
-            }
-            if (musicOverlay) {
-                // переключение звука (byte 1038-1046)
-                if (k == J2.UP || k == J2.NUM_2 || k == J2.DOWN || k == J2.NUM_8) {
-                    SoundManager.canSound = !SoundManager.canSound;
                 }
             }
             // (info: иных клавиш нет — падаем в общую часть, как в оригинале)
@@ -1244,7 +1250,7 @@ public final class GameScene implements Scene {
             host.fonts().drawCentered(batch, m, 280, 250, 223, 134);
         }
         if (musicOverlay) {
-            drawMusicOverlay(batch, a);
+            settingsScreen.render(batch, host);   // этап 5c: чёрные настройки
         }
         if (info) {
             drawInfoOverlay(batch, a);
@@ -1712,34 +1718,6 @@ public final class GameScene implements Scene {
                 batch.draw(a.region("shou.png"), 193, 208);
                 break;
             default:
-        }
-    }
-
-    /** Оверлей настройки звука g(): заливка (1,1,1), заголовок, ДА/НЕТ + shou. */
-    private void drawMusicOverlay(SpriteBatch batch, Assets a) {
-        a.fill(batch, 0, 0, 240, 320, 1f / 255f, 1f / 255f, 1f / 255f, 1);
-        Fonts f = host.fonts();
-        f.drawCentered(batch, Texts.MUSIC_TITLE, 8, 100, 100, 255);
-        f.drawCentered(batch, Texts.MUSIC_UNDERLINE, 16, 100, 100, 255);
-
-        if (!SoundManager.canSound) {
-            // g(): int(4),int(0),int(1),int(2),int(3) — остановить ВСЕ каналы
-            host.sound().changeClosedMid(SoundManager.CH_MAPBG);
-            host.sound().changeClosedMid(SoundManager.CH_MENU);
-            host.sound().changeClosedMid(SoundManager.CH_GET);
-            host.sound().changeClosedMid(SoundManager.CH_WRONG);
-            host.sound().changeClosedMid(SoundManager.CH_CORRECT);
-        }
-
-        int x = (240 - f.stringWidth(Texts.SOUND_ON)) / 2;
-        if (SoundManager.canSound) {
-            f.draw(batch, Texts.SOUND_ON, x, Texts.SOUND_ON_Y, 255, 255, 255);
-            f.draw(batch, Texts.SOUND_OFF, x, Texts.SOUND_OFF_Y, 200, 200, 200);
-            batch.draw(a.region("shou.png"), x + Texts.SOUND_SHOU_DX, Texts.SOUND_ON_Y + 2);
-        } else {
-            f.draw(batch, Texts.SOUND_ON, x, Texts.SOUND_ON_Y, 200, 200, 200);
-            f.draw(batch, Texts.SOUND_OFF, x, Texts.SOUND_OFF_Y, 255, 255, 255);
-            batch.draw(a.region("shou.png"), x + Texts.SOUND_SHOU_DX, Texts.SOUND_OFF_Y);
         }
     }
 
