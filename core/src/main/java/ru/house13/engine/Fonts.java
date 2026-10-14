@@ -11,11 +11,16 @@ import com.badlogic.gdx.utils.Disposable;
 /**
  * Шрифт порта. В оригинале — системный шрифт телефона Font.getFont(0,0,8)
  * (SMALL, пропорциональный): кириллица «бесплатно» из прошивки K700.
- * В порте системного шрифта нет, поэтому FreeType + DejaVu Sans (свободная
- * лицензия, полный набор кириллицы, см. fonts/DejaVuSans-LICENSE.txt).
+ * В порте системного шрифта нет, поэтому FreeType + пиксельный шрифт.
  *
- * ЭТАП 5 (перевод CN->RU) заменит этот шрифт на финальный; сейчас 15px —
- * приблизительный аналог SMALL у Sony Ericsson.
+ * ЭТАП 5b (финальный): Fusion Pixel 12px (пропорциональный, OFL, сабсет
+ * latin-варианта: кириллица+латиница+№«»—…„“; полный шрифт — 4.9 МБ из-за
+ * CJK, сабсет — 31 КБ; лицензии в fonts/FusionPixel-OFL.txt + LICENSES/).
+ * Пиксельная сетка 12px рендерится в нативном размере 12 без хинтинга
+ * + Nearest — при целочисленном масштабе окна каждый пиксель шрифта
+ * становится ровным блоком N×N. Выбор проверен против DejaVu 15px на
+ * реальных строках паков: бокс сообщений ~226px против ~220px (+3%),
+ * длинные строки авторского перевода перестают упираться в лимит 2 строк.
  *
  * Конвенция координат — как J2ME Graphics.drawString: (x, y) = ЛЕВЫЙ ВЕРХНИЙ
  * угол строки. libGDX BitmapFont.draw считает y базовой линией, поэтому
@@ -23,8 +28,8 @@ import com.badlogic.gdx.utils.Disposable;
  */
 public final class Fonts implements Disposable {
 
-    /** Размер SMALL-аналога. */
-    public static final int SMALL_SIZE = 15;
+    /** Размер пиксельной сетки Fusion Pixel (дизайн-размер шрифта). */
+    public static final int SMALL_SIZE = 12;
 
     /** Кириллица + типографские знаки сверх ASCII (DEFAULT_CHARS). */
     private static final String CYRILLIC =
@@ -38,7 +43,7 @@ public final class Fonts implements Disposable {
 
     public Fonts() {
         FreeTypeFontGenerator gen =
-            new FreeTypeFontGenerator(Gdx.files.internal("fonts/DejaVuSans.ttf"));
+            new FreeTypeFontGenerator(Gdx.files.internal("fonts/FusionPixel12.otf"));
         FreeTypeFontGenerator.FreeTypeFontParameter p =
             new FreeTypeFontGenerator.FreeTypeFontParameter();
         p.size = SMALL_SIZE;

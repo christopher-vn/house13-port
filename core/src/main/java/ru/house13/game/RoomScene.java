@@ -69,6 +69,10 @@ public final class RoomScene {
      * Нажатие клавиши (keyPressed RU case(int) при !d6). Возвращает true,
      * если нажатие направления принято. Гейты !try (сейф) и c6 (стрелки
      * обучения) проверяет GameScene ДО вызова.
+     *
+     * Этап 5b: цифры 2/4/6/8 больше НЕ двигают руку (раскладка порта —
+     * только стрелки; цифры остались вводом кода сейфа). Синтетическая
+     * «вниз» при dp==2 приходит как J2.DOWN напрямую — не затронута.
      */
     public boolean handleKey(J2 k) {
         if (held) {
@@ -76,19 +80,15 @@ public final class RoomScene {
         }
         switch (k) {
             case LEFT:
-            case NUM_4:
                 pressDirection(0);
                 return true;
             case RIGHT:
-            case NUM_6:
                 pressDirection(1);
                 return true;
             case UP:
-            case NUM_2:
                 pressDirection(2);
                 return true;
             case DOWN:
-            case NUM_8:
                 pressDirection(3);
                 return true;
             default:
@@ -119,19 +119,34 @@ public final class RoomScene {
         hand.release();
     }
 
-    /** Физический тик (long()): переходы + движение + анимация. */
-    public void tick(boolean usingTool) {
+    /** Физический тик (long()): переходы + движение + анимация.
+     * fast — ускорение порта (Shift): ДВА шага по 5 px с отдельной
+     * валидацией каждого — сквозь тонкие стены не проскочить. */
+    public void tick(boolean usingTool, boolean fast) {
         // 1) edge-walk по текущей позиции (гейт !cP в каждом правиле)
         EdgeRules.Rule rule = EdgeRules.match(room, hand.j, hand.i);
         if (rule != null && !usingTool) {
             room = EdgeRules.apply(rule, hand);
             return;        // long(): переход отрабатывает за такт, без движения
         }
-        // 2) валидация + применение
-        hand.validate(RoomData.WALLS[room]);
-        hand.apply();
+        // 2) валидация + применение (5 px; при Shift — дважды)
+        step();
+        if (fast) {
+            step();
+        }
         // 3) анимация (paint() RU)
         hand.animate();
+    }
+
+    /** Совместимость с этапами 2-4 (тесты): обычная скорость. */
+    public void tick(boolean usingTool) {
+        tick(usingTool, false);
+    }
+
+    /** Один шаг 5 px: p()-валидация (блокировка -> скорость 0) + a(). */
+    private void step() {
+        hand.validate(RoomData.WALLS[room]);
+        hand.apply();
     }
 
     /** Нажатие направления: keyPressed RU case() при !d6. */

@@ -9,8 +9,17 @@ import com.badlogic.gdx.Input;
  *   -1 вверх, -2 вниз, -3 влево, -4 вправо, -5 FIRE (центр джойстика),
  *   -6 левая софт-клавиша, -7 правая софт-клавиша, '0'..'9' = 48..57.
  *
- * Порт дополняет (в оригинале отсутствует, описано в README):
- *   WASD — синонимы стрелок; Space/Z — синонимы FIRE; Backspace — правый софт.
+ * Раскладка ПОРТА (этап 5b, «RPG Maker по-своему»; см. README):
+ *   стрелки        — движение руки / навигация меню
+ *   Enter, Space   — OK (FIRE)
+ *   Z              — инвентарь (он же '1' оригинала — карусель предметов)
+ *   X, Esc         — отмена / меню игры (правый софт)
+ *   Shift (удерж.) — ускорение руки x2 (см. KeyMap.isShift, GameScene)
+ *   0..9           — ввод кода сейфа (вне сейфа '1' — инвентарь, как раньше)
+ *
+ * F1 (левый софт) оставлен как ОТЛАДОЧНАЯ клавиша: она нужна скриптам
+ * автотеста (-Dhouse13.script, токен Ls) и дублирует FIRE в диалогах.
+ * WASD и F2/Backspace убраны (этап 3) — раскладка сознательно минимальна.
  */
 public final class KeyMap {
 
@@ -30,32 +39,29 @@ public final class KeyMap {
     public static J2 map(int gdxKey) {
         switch (gdxKey) {
             case Input.Keys.UP:
-            case Input.Keys.W:
                 return J2.UP;
             case Input.Keys.DOWN:
-            case Input.Keys.S:
                 return J2.DOWN;
             case Input.Keys.LEFT:
-            case Input.Keys.A:
                 return J2.LEFT;
             case Input.Keys.RIGHT:
-            case Input.Keys.D:
                 return J2.RIGHT;
-            // FIRE: центр джойстика (-5). Enter/Space/Z — «5»-эквиваленты выбора.
+            // OK: центр джойстика (-5) + Enter/Space.
             case Input.Keys.CENTER:
             case Input.Keys.ENTER:
             case Input.Keys.SPACE:
-            case Input.Keys.Z:
                 return J2.FIRE;
-            // Левая софт-клавиша (-6): F1. Все её функции дублированы FIRE.
+            // Z = инвентарь: порт '1' (карусель предметов, Inventory/byte 1067).
+            case Input.Keys.Z:
+                return J2.NUM_1;
+            // Отмена / меню игры: X и Esc = правый софт (-7).
+            case Input.Keys.X:
+            case Input.Keys.ESCAPE:
+                return J2.SOFT_RIGHT;
+            // Отладочная клавиша левого софта (-6): токен автотеста Ls.
             case Input.Keys.F1:
                 return J2.SOFT_LEFT;
-            // Правая софт-клавиша (-7): Esc/F2/Backspace (меню игры, отмена).
-            case Input.Keys.ESCAPE:
-            case Input.Keys.F2:
-            case Input.Keys.BACKSPACE:
-                return J2.SOFT_RIGHT;
-            // Цифры: верхний ряд и numpad ('0'..'9' = 48..57).
+            // Цифры: ВВОД КОДА СЕЙФА (0–9; '5' — подтверждение, как в оригинале).
             case Input.Keys.NUM_0:
             case Input.Keys.NUMPAD_0:
                 return J2.NUM_0;
@@ -89,5 +95,15 @@ public final class KeyMap {
             default:
                 return J2.NONE;
         }
+    }
+
+    /**
+     * Модификатор ускорения (дополнение порта, в оригинале нет):
+     * удержание Shift — рука движется 10 px/тик вместо 5 (два шага
+     * по 5 px с проверкой коллизий на каждом — туннелирование исключено).
+     * Обрабатывается вне J2ME-модели: GameScene.tick по «сырым» gdx-кодам.
+     */
+    public static boolean isShift(int gdxKey) {
+        return gdxKey == Input.Keys.SHIFT_LEFT || gdxKey == Input.Keys.SHIFT_RIGHT;
     }
 }

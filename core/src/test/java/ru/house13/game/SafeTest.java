@@ -61,7 +61,14 @@ class SafeTest {
         game.tick(new int[]{Input.Keys.NUMPAD_8}, new int[0]);
         game.tick(new int[]{Input.Keys.NUMPAD_1}, new int[0]);
         game.tick(new int[]{Input.Keys.NUMPAD_9}, new int[0]);
-        game.tick(new int[]{Input.Keys.ENTER}, new int[0]);      // '5' — подтверждение
+        // Этап 5b: ENTER при открытом сейфе = нажатие КЛЕТКИ клавиатуры.
+        // Курсор после открытия на '1' — ведём к ✓ (вниз-вниз-вниз) и жмём OK:
+        // клетка ✓ доставляет '5' — подтверждение кода, как в оригинале.
+        game.tick(new int[]{Input.Keys.DOWN}, new int[0]);
+        game.tick(new int[]{Input.Keys.DOWN}, new int[0]);
+        game.tick(new int[]{Input.Keys.DOWN}, new int[0]);
+        assertEquals(9, game.keypad.cursor, "курсор на клетке ✓");
+        game.tick(new int[]{Input.Keys.ENTER}, new int[0]);
         assertFalse(safe.open);
         assertTrue(game.dB, "сейф открыт навсегда");
         assertEquals(Texts.SAFE_OPEN, game.bf);
@@ -83,6 +90,7 @@ class SafeTest {
         game.tick(new int[]{Input.Keys.NUMPAD_2}, new int[0]);
         game.tick(new int[]{Input.Keys.NUMPAD_3}, new int[0]);
         game.tick(new int[]{Input.Keys.NUMPAD_4}, new int[0]);
+        // ENTER = клетка '1' (курсор после открытия) — «не '5'» на 6-м нажатии
         game.tick(new int[]{Input.Keys.ENTER}, new int[0]);
         assertFalse(safe.open);
         assertEquals(Texts.SAFE_WRONG, game.bf);
@@ -108,7 +116,10 @@ class SafeTest {
     @Test
     void nonDigitKeySkipsPositionButAdvancesCursor() {
         openSafeAtSpot();
-        game.tick(new int[]{Input.Keys.UP}, new int[0]);   // не цифра: ag++, позиция не пишет
+        // Этап 5b: стрелки при сейфе теперь двигают КУРСОР клавиатуры
+        // (см. SafeKeypadTest) — квирк «не-цифра пропускает слот» достижим
+        // прочими не-цифровыми клавишами (TAB -> J2.NONE), как в оригинале.
+        game.tick(new int[]{Input.Keys.TAB}, new int[0]);   // не цифра: ag++, позиция не пишет
         assertEquals(2, safe.ag);
         assertEquals(0, inv.aQ[9], "позиция пропущена со значением 0");
     }
@@ -141,6 +152,7 @@ class SafeTest {
     void movementBlockedWhileSafeOpen() {
         openSafeAtSpot();
         game.tick(new int[]{Input.Keys.UP}, new int[0]);
-        assertEquals(0, game.room.hand.dy, "case() гейтится !try");
+        assertEquals(0, game.room.hand.dy, "case() гейтится !try (стрелка — курсору клавиатуры)");
+        assertEquals(1, safe.ag, "стрелка поглощена курсором: ag остался = 1 (после открывающей '5')");
     }
 }

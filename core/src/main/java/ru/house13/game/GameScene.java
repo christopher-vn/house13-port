@@ -61,6 +61,8 @@ public final class GameScene implements Scene {
     final RoomScene room;    // package-private: доступ из тестов
     final Inventory inv;
     final Safe safe;
+    final SafeKeypad keypad = new SafeKeypad(); // экранная клавиатура сейфа (этап 5b)
+    boolean fast;            // Shift удержан — рука x2 (дополнение порта)
 
     // ---- сцена/оверлеи (этап 3)
     boolean pause;           // aR (canExit)
@@ -207,15 +209,29 @@ public final class GameScene implements Scene {
             syntheticDown = false;
             handleKey(J2.DOWN);
         }
-        // Нажатия раньше отпусканий (press предшествует release — J2ME-порядок)
+        // Нажатия раньше отпусканий (press предшествует release — J2ME-порядок).
+        // Shift — модификатор порта (ускорение x2): не доходит до каскада,
+        // и его отпускание НЕ сбрасывает движение (в отличие от J2ME-клавиш).
+        boolean nonShiftUp = false;
         for (int key : gdxKeyDowns) {
+            if (KeyMap.isShift(key)) {
+                fast = true;
+                continue;
+            }
             if (isDebugKey(key)) {
                 room.debugKeyDown(key);
             } else {
                 handleKey(KeyMap.map(key));
             }
         }
-        if (gdxKeyUps.length > 0) {
+        for (int key : gdxKeyUps) {
+            if (KeyMap.isShift(key)) {
+                fast = false;
+            } else {
+                nonShiftUp = true;
+            }
+        }
+        if (nonShiftUp) {
             room.releaseAll();
         }
         frame();                       // else() при paint 10 Гц
@@ -255,7 +271,7 @@ public final class GameScene implements Scene {
         // Порядок long(): шаг движения -> рисование -> жалюзи (пин руки
         // ПОСЛЕ шага — как в оригинале, pin побеждает)
         if (!inv.showTool && !pause) {
-            room.tick(inv.usingTool);
+            room.tick(inv.usingTool, fast);
             if (dp == 3) {
                 blindsFrame();         // жалюзи в long() при bianl==3
             }
@@ -418,6 +434,15 @@ public final class GameScene implements Scene {
 
     /** [A3] основной каскад игры. */
     private void cascade(J2 k) {
+        // ЭТАП 5b: экранная клавиатура сейфа. Стрелки двигают пульсирующий
+        // курсор (поглощаются), OK нажимает клетку — доставляя ОРИГИНАЛЬНУЮ
+        // клавишу ('1'..'9'/'0', '5'-подтверждение, правый софт-закрытие) в
+        // нижележащий каскад. Safe (s()/try-хвост) не меняется; цифры и
+        // софты проходят напрямую (быстрый путь с физической клавиатуры).
+        k = keypad.map(k, safe.open);
+        if (k == null) {
+            return;                    // стрелка съедена курсором клавиатуры
+        }
         // 1) FIRE -> '5' (без оверлеев; byte 949)
         if (k == J2.FIRE && !pause && !info && !musicOverlay) {
             k = J2.NUM_5;
@@ -1169,6 +1194,9 @@ public final class GameScene implements Scene {
                 renderArrows(batch, a);
             }
             safe.render(batch, a);
+            if (safe.open && inv.aQ[15] != 10) {
+                keypad.render(batch, a, host.tick()); // клавиатура 3x4 + пульс
+            }
             if (inv.aQ[15] == 10) {
                 renderCredits(batch, a);
             }

@@ -6,8 +6,9 @@
 символ остаётся в строке» (семантика do(String) из b.java). Строка длиннее
 двух строк будет ОБРЕЗАНА — этот скрипт ловит такие случаи до дампов.
 
-Ширины меряются тем же TTF (assets/fonts/DejaVuSans.ttf, 15px) через PIL;
-запас 3% на отличия хинтинга FreeType/PIL.
+Ширины меряются тем же шрифтом, что и игра (assets/fonts/FusionPixel12.otf,
+12px — этап 5b; до него был DejaVu Sans 15px) через PIL; запас 3%
+на отличия хинтинга FreeType/PIL.
 
 Запуск: python3 scripts/check_text_widths.py
 """
@@ -17,7 +18,7 @@ import sys
 from PIL import ImageFont
 
 ROOT = "/home/z/my-project/house13-port"
-FONT = ImageFont.truetype(f"{ROOT}/assets/fonts/DejaVuSans.ttf", 15)
+FONT = ImageFont.truetype(f"{ROOT}/assets/fonts/FusionPixel12.otf", 12)
 
 # Строки бокса сообщений (bf): максимум 2 строки
 BF_KEYS = [
@@ -45,6 +46,7 @@ ONE_LINE_234 = ["INFO_TITLE", "MUSIC_TITLE", "SOUND_ON", "SOUND_OFF",
                 "ITEM_5", "ITEM_6", "ITEM_7", "ITEM_8", "ITEM_9", "ITEM_10",
                 "ITEM_11", "ITEM_12", "ITEM_13", "ITEM_14"]
 # Строки выбора пака: текст + shou(~30px) справа => w <= 164
+# (лимит РАСКЛАДКИ экрана, не шрифта; при Fusion 12px запас только вырос)
 TR_MAX = 164
 TR_KEYS = ["TR_AUTH", "TR_VPK"]
 
@@ -72,7 +74,7 @@ def main() -> int:
     limit = 240 - 2 * width("В")
     safe_limit = limit * 0.97  # 3% запас хинтинга
     print(f"лимит бокса: {limit:.0f}px (с запасом {safe_limit:.0f}px), "
-          f"шрифт DejaVu 15px, В={width('В'):.1f}px")
+          f"шрифт Fusion Pixel 12px, В={width('В'):.1f}px")
     failures = []
     for pack in ("ru-vpk", "ru-auth"):
         js = json.load(open(f"{ROOT}/assets/text/{pack}.json", encoding="utf-8"))

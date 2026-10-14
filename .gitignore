@@ -30,3 +30,7 @@ Thumbs.db
 *.iml
 .vs/
 compile_commands.json
+
+# Дампы кадров отладочных прогонов (house13.dump)
+dump_*.png
+frame_dump.png
