@@ -166,4 +166,15 @@ class SoundManagerTest {
         sm.resumeAll();
         assertTrue(sm.isPlaying(SoundManager.CH_MENU));
     }
+    @Test
+    void shadowThemeChannelIsLoopedBackground() {
+        // этап 5c: «Тени» (mapbg2.ogg) — фоновый зацикленный канал 5
+        SoundManager sm = newManager();
+        sm.createBackMid(SoundManager.CH_MAPBG2);
+        sm.playBackMid(SoundManager.CH_MAPBG2);
+        assertTrue(sm.isPlaying(SoundManager.CH_MAPBG2));
+        FakeMusic m = created.get(0);
+        assertTrue(m.looping, "mapbg2 — фоновая тема, луп как у mapbg");
+        assertEquals(0.7f, m.volume, 1e-6);
+    }
 }

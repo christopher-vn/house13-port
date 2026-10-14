@@ -96,6 +96,8 @@ public final class GameScene implements Scene {
     final DialogBox dialog = new DialogBox(); // бокс порта (этап 5c)
     /** Экран настроек (этап 5c) — общий с главным меню; вместо оверлея g(). */
     final SettingsScreen settingsScreen = new SettingsScreen(null);
+    /** Играющий фоновый канал (этап 5c): mapbg или «Тени» — по комнате. */
+    private int bgTrack = SoundManager.CH_MAPBG;
 
     // ---- флаги комнат (try(int)/u()); имена — из RU b.java
     boolean l;               // дверь спальни отперта
@@ -1208,9 +1210,17 @@ public final class GameScene implements Scene {
         } else {
             // else(): чёрная заливка + музыка (int(0); a(4); new(4))
             a.fill(batch, 0, 0, 240, 320, 0, 0, 0, 1);
+            // w(): фоновая музыка (int(0); a(4); new(4)) — этап 5c: выбор
+            // темы по комнате; при смене зоны прежний канал гасится
+            // (как при переходах меню/игра в оригинале)
             host.sound().changeClosedMid(SoundManager.CH_MENU);
-            host.sound().createBackMid(SoundManager.CH_MAPBG);
-            host.sound().playBackMid(SoundManager.CH_MAPBG);
+            int track = roomTrack(room.room);
+            if (bgTrack != track) {
+                host.sound().changeClosedMid(bgTrack);
+                bgTrack = track;
+            }
+            host.sound().createBackMid(bgTrack);
+            host.sound().playBackMid(bgTrack);
             // w(): фон -> объекты -> стрелки -> сейф -> титры
             room.renderBackground(batch);
             renderRoomObjects(batch, a);
@@ -1692,6 +1702,19 @@ public final class GameScene implements Scene {
         // (амплитуда am мертва: 0 < 290 всегда)
         drawLadder(batch, endingLines, 10, 272 - A, dA, 14);
         batch.draw(a.region("js.png"), (240 - 176) / 2, 20);
+    }
+
+    /** ЭТАП 5c: фоновая тема комнаты. «Тени» (mapbg2) — тёмное крыло дома:
+     *  5 «там кто-то есть», 6 «повеяло холодом», 7 «нет ручки»,
+     *  8 «за мной наблюдают», 16 «сердитый голос», 17 «ты не выйдешь»;
+     *  в остальном доме — mapbg оригинала. */
+    static int roomTrack(int room) {
+        switch (room) {
+            case 5: case 6: case 7: case 8: case 16: case 17:
+                return SoundManager.CH_MAPBG2;
+            default:
+                return SoundManager.CH_MAPBG;
+        }
     }
 
     /** Меню паузы i(): чёрный фон + caidan1 (230x149: панель 136x149 + 4 полосы). */

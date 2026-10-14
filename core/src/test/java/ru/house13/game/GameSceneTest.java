@@ -197,6 +197,20 @@ class GameSceneTest {
         assertEquals("a", game.dialog.line(0), "2 тика — первый символ");
     }
 
+    @Test
+    void shadowThemePlaysInDarkWingRooms() {
+        // этап 5c: «Тени» в комнатах 5-8 и 16-17, mapbg — в остальном доме
+        assertEquals(SoundManager.CH_MAPBG, GameScene.roomTrack(0));
+        assertEquals(SoundManager.CH_MAPBG, GameScene.roomTrack(1));
+        assertEquals(SoundManager.CH_MAPBG, GameScene.roomTrack(13));
+        assertEquals(SoundManager.CH_MAPBG2, GameScene.roomTrack(5), "там кто-то есть");
+        assertEquals(SoundManager.CH_MAPBG2, GameScene.roomTrack(6), "повеяло холодом");
+        assertEquals(SoundManager.CH_MAPBG2, GameScene.roomTrack(7), "нет ручки");
+        assertEquals(SoundManager.CH_MAPBG2, GameScene.roomTrack(8), "за мной наблюдают");
+        assertEquals(SoundManager.CH_MAPBG2, GameScene.roomTrack(16), "сердитый голос");
+        assertEquals(SoundManager.CH_MAPBG2, GameScene.roomTrack(17), "ты не выйдешь");
+    }
+
     private void openPause() {
         game.tick(new int[]{Input.Keys.ESCAPE}, new int[0]);
         assertTrue(game.pause, "пауза должна открыться");
