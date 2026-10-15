@@ -15,6 +15,8 @@ import ru.house13.engine.Fonts;
 import ru.house13.engine.InputQueue;
 import ru.house13.engine.IntegerScaleViewport;
 import ru.house13.engine.SoundManager;
+import ru.house13.engine.pad.PadPoller;
+import ru.house13.engine.pad.PadRouter;
 import ru.house13.game.FlashScene;
 import ru.house13.game.GameHost;
 import ru.house13.game.GameScene;
@@ -43,7 +45,9 @@ import ru.house13.game.Scene;
  *   house13.dump=<файл.png|true> — дамп framebuffer;
  *   house13.dump.tick=N — номер тика для дампа (0 = первый кадр);
  *   house13.room=N — стартовая комната (этап 2);
- *   house13.audio=false — отключить аудио (headless-прогоны).
+ *   house13.audio=false — отключить аудио (headless-прогоны);
+ *   house13.pad=false — отключить мост геймпада (этап 5e, десктоп);
+ *   house13.pad.debug=true — лог событий геймпада (кнопка -> клавиша).
  */
 public class House13Game implements ApplicationListener, GameHost {
 
@@ -58,6 +62,11 @@ public class House13Game implements ApplicationListener, GameHost {
     private static final float MAX_FRAME_DELTA = 0.25f;
 
     private final InputQueue input = new InputQueue();
+
+    /** Геймпадный ввод (этап 5e): тот же путь, что клавиатура — injectDown/Up. */
+    private final PadRouter padRouter = new PadRouter(input);
+    /** Платформенный мост (десктоп: GLFW); null = геймпад отключён свойством. */
+    private PadPoller padPoller;
 
     private OrthographicCamera camera;
     private IntegerScaleViewport viewport;
@@ -83,6 +92,16 @@ public class House13Game implements ApplicationListener, GameHost {
     private int scriptWait;
     private int scriptHoldKey = -1;   // hold-токен: зажатая клавиша
 
+    /** Установка платформенного моста геймпада ДО запуска цикла (см. Lwjgl3Launcher). */
+    public void setPadPoller(PadPoller poller) {
+        this.padPoller = poller;
+    }
+
+    /** Геймпадный роутер (для будущего оверлея/экрана ремапа). */
+    public PadRouter padRouter() {
+        return padRouter;
+    }
+
     @Override
     public void create() {
         camera = new OrthographicCamera();
@@ -100,6 +119,11 @@ public class House13Game implements ApplicationListener, GameHost {
 
         parseDebugProps();
         scene = initialScene();
+
+        // ЭТАП 5e: отладочный лог геймпада (события кнопка -> клавиша порта).
+        if ("true".equals(System.getProperty("house13.pad.debug"))) {
+            padRouter.setLogger(s -> Gdx.app.log("House13Pad", s));
+        }
 
         Gdx.input.setInputProcessor(input);
     }
@@ -153,6 +177,12 @@ public class House13Game implements ApplicationListener, GameHost {
 
     @Override
     public void render() {
+        // 0) Геймпад (этап 5e): опрос ДО тиков — события копятся в InputQueue
+        //    вместе с клавиатурой и выравниваются с логическим шагом 10 Гц.
+        if (padPoller != null) {
+            padPoller.poll(padRouter);
+        }
+
         // 1) Накопление времени и логические тики
         float delta = Math.min(Gdx.graphics.getDeltaTime(), MAX_FRAME_DELTA);
         accumulator += delta;

@@ -3,11 +3,12 @@ package ru.house13.lwjgl3;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import ru.house13.House13Game;
+import ru.house13.lwjgl3.GlfwPadPoller;
 
 /**
  * Десктоп-запуск (LWJGL3). Окно стартует в x2 (480x640), масштаб
  * пересчитывается на resize. Свойства house13.* пробрасываются gradle
- * (см. lwjgl3/build.gradle): start/script/dump/dump.tick/room/audio.
+ * (см. lwjgl3/build.gradle): start/script/dump/dump.tick/room/audio/pad.
  */
 public final class Lwjgl3Launcher {
 
@@ -20,6 +21,11 @@ public final class Lwjgl3Launcher {
         cfg.setIdleFPS(0); // с vsync рендер по кадровой частоте монитора
         // headless-прогоны (Xvfb без аудио): -Dhouse13.audio=false
         cfg.disableAudio("false".equals(System.getProperty("house13.audio", "true")));
-        new Lwjgl3Application(new House13Game(), cfg);
+        House13Game game = new House13Game();
+        // Геймпад (этап 5e): GLFW-мост; house13.pad=false — не устанавливать.
+        if (!"false".equals(System.getProperty("house13.pad", "true"))) {
+            game.setPadPoller(new GlfwPadPoller());
+        }
+        new Lwjgl3Application(game, cfg);
     }
 }
